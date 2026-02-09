@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import carRental.CarRrental.Dtos.AuthResponse;
 import carRental.CarRrental.Dtos.LoginRequest;
 import java.time.Instant;
+import carRental.CarRrental.Dtos.ForgotPasswordRequest;
+import carRental.CarRrental.Dtos.ResetPasswordRequest;
+import carRental.CarRrental.Models.TokenType;
 
 @Service
 public class AuthService {
@@ -111,4 +114,40 @@ public class AuthService {
         t.setUsedAt(Instant.now());
         tokenRepository.save(t);
     }
+
+    public void forgotPassword(ForgotPasswordRequest req) {
+        String email = req.getEmail().trim().toLowerCase();
+
+        // IMPORTANT: response generic to prevent user enumeration
+        userRepository.findByEmail(email).ifPresent(user -> {
+            var resetToken = tokenService.createPasswordResetToken(user);
+
+            String link = "http://localhost:8080/auth/reset-password?token=" + resetToken.getToken();
+
+            emailService.sendEmail(
+                    user.getEmail(),
+                    "Reset your password",
+                    "Click to reset password (valid 15 minutes):\n" + link
+            );
+        });
+    }
+// ...
+
+    public void resetPassword(ResetPasswordRequest req) {
+        UserToken t = tokenRepository
+                .findByTokenAndType(req.getToken(), TokenType.RESET_PASSWORD)
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
+
+        if (t.isUsed()) throw new RuntimeException("Token already used");
+        if (t.isExpired()) throw new RuntimeException("Token expired");
+
+        AppUser user = t.getUser();
+
+        user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
+        userRepository.save(user);
+
+        t.setUsedAt(Instant.now());
+        tokenRepository.save(t);
+    }
+
 }

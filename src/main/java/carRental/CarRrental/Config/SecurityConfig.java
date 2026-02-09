@@ -2,27 +2,41 @@ package carRental.CarRrental.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
 
+    private final JwtAuthFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // for APIs (Postman), we disable CSRF for now
-                .csrf(csrf -> csrf.disable())
-
-                // allow these endpoints without login
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/register", "/auth/verify", "/auth/login").permitAll()
-                        .anyRequest().authenticated()
+  .csrf(csrf -> csrf.disable())
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex ->
+                        ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/register", "/auth/verify", "/auth/login",
+                                "/auth/forgot-password", "/auth/reset-password")
+                        .permitAll()
+                        .anyRequest().authenticated()
+                );
 
-                // keep default basic auth for now (temporary)
-                .httpBasic(Customizer.withDefaults());
+        http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // JWT filter runs before default username/password filter
+        http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -5,6 +5,8 @@ import carRental.CarRrental.Services.AuthService;
 import org.springframework.web.bind.annotation.*;
 import carRental.CarRrental.Dtos.AuthResponse;
 import carRental.CarRrental.Dtos.LoginRequest;
+import carRental.CarRrental.Dtos.ForgotPasswordRequest;
+import carRental.CarRrental.Dtos.ResetPasswordRequest;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -32,4 +34,19 @@ public class AuthController {
     public AuthResponse login(@RequestBody LoginRequest request) {
         return authService.login(request);
     }
+
+
+
+    @PostMapping("/forgot-password")
+    public String forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return "If the email exists, a reset link has been sent.";
+    }
+
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return "Password reset successful.";
+    }
+
 }
