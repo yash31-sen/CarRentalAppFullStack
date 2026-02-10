@@ -1,6 +1,6 @@
 package carRental.CarRrental.Services;
 
-import carRental.CarRrental.Dtos.RegisterRequest;
+import carRental.CarRrental.Dtos.*;
 import carRental.CarRrental.Models.AppUser;
 import carRental.CarRrental.Models.TokenType;
 import carRental.CarRrental.Models.UserRole;
@@ -9,12 +9,11 @@ import carRental.CarRrental.Repositories.AppUserRepository;
 import carRental.CarRrental.Repositories.UserTokenRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import carRental.CarRrental.Dtos.AuthResponse;
-import carRental.CarRrental.Dtos.LoginRequest;
+
 import java.time.Instant;
-import carRental.CarRrental.Dtos.ForgotPasswordRequest;
-import carRental.CarRrental.Dtos.ResetPasswordRequest;
+
 import carRental.CarRrental.Models.TokenType;
+import carRental.CarRrental.Models.UserRole;
 
 @Service
 public class AuthService {
@@ -148,6 +147,26 @@ public class AuthService {
 
         t.setUsedAt(Instant.now());
         tokenRepository.save(t);
+    }
+
+
+
+    public void createAdmin(CreateAdminRequest req) {
+        String email = req.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByEmail(email)) {
+            throw new RuntimeException("Email already registered");
+        }
+
+        AppUser admin = AppUser.builder()
+                .name(req.getName())
+                .email(email)
+                .passwordHash(passwordEncoder.encode(req.getPassword()))
+                .role(UserRole.ADMIN)
+                .emailVerified(true) // admin created by super admin, so verified
+                .build();
+
+        userRepository.save(admin);
     }
 
 }

@@ -27,11 +27,16 @@ public class SecurityConfig {
                         ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/register", "/auth/verify", "/auth/login",
-                                "/auth/forgot-password", "/auth/reset-password")
-                        .permitAll()
+                        .requestMatchers("/auth/**").permitAll()
+
+                        .requestMatchers("/super-admin/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+
+                        .requestMatchers("/api/**").authenticated()
+
                         .anyRequest().authenticated()
                 );
+
 
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
