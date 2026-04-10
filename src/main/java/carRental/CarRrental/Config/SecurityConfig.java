@@ -31,7 +31,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/super-admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-
+                        .requestMatchers("/driver/**").hasAnyRole("ADMIN", "SUPER_ADMIN","DRIVER")
                         .requestMatchers("/api/**").authenticated()
 
                         .anyRequest().authenticated()
