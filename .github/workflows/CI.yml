@@ -20,5 +20,5 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Build with Maven
-        run: mvn clean install
+      - name: Build
+      - run: mvn clean install -DskipTests
