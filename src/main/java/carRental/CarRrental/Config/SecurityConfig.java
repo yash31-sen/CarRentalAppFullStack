@@ -21,26 +21,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-  .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex ->
                         ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers(
+                                "/auth/**",              // ✅ public APIs
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"        // ✅ REQUIRED for Swagger
+                        ).permitAll()
 
                         .requestMatchers("/super-admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
-                        .requestMatchers("/driver/**").hasAnyRole("ADMIN", "SUPER_ADMIN","DRIVER")
+                        .requestMatchers("/driver/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "DRIVER")
                         .requestMatchers("/api/**").authenticated()
 
                         .anyRequest().authenticated()
                 );
 
-
-        http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
-        // JWT filter runs before default username/password filter
+        // ✅ Add filter ONLY ONCE
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

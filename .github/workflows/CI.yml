@@ -1,16 +1,16 @@
-name: Spring Boot CI
+name: CI Pipeline
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -20,38 +20,8 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Build
-        run: mvn clean install -DskipTests
+      - name: Build with Maven
+        run: mvn clean install
 
-
-      - name: Copy JAR to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "target/*.jar"
-          target: "/home/ubuntu/"
-
-
-
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            pkill -f 'java -jar' || true
-            rm -f app.jar
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            pkill -f 'java -jar' || true
-            cd /home/ubuntu
-            mv target/*.jar app.jar || true
-            nohup java -jar app.jar > app.log 2>&1 &
+      - name: Build Docker Image
+        run: docker build -t car-rental-app .
