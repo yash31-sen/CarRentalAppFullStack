@@ -38,26 +38,54 @@ jobs:
       - name: Push Docker Image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/car-rental-app
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
+    deploy:
+      runs-on: ubuntu-latest
+      needs: build
 
-    steps:
+      steps:
 
-      - name: Create SSH key
-        run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
-          chmod 600 key.pem
+        - name: Debug - Starting Deploy Job
+          run: echo "Deploy job started"
 
-      - name: Test SSH connection
-        run: |
-          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo CONNECTED"
+        - name: Debug - Check variables presence
+          run: |
+            echo "EC2_HOST is set"
+            echo "EC2_USER is set"
+            echo "SSH key length:"
+            echo "${#EC2_SSH_KEY}"
+          env:
+            EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Deploy to EC2
-        run: |
-          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
-            cd ~/car-rental &&
-            docker pull ${{ secrets.DOCKER_USERNAME }}/car-rental-app &&
-            docker compose down &&
-            docker compose up -d
-          "
+        - name: Debug - Try SSH Connection
+          uses: appleboy/ssh-action@v0.1.10
+          with:
+            host: ${{ secrets.EC2_HOST }}
+            username: ${{ secrets.EC2_USER }}
+            key: ${{ secrets.EC2_SSH_KEY }}
+            port: 22
+            debug: true
+            script: |
+              echo "SSH Connected Successfully"
+              whoami
+              pwd
+
+        - name: Deploy to EC2
+          uses: appleboy/ssh-action@v0.1.10
+          with:
+            host: ${{ secrets.EC2_HOST }}
+            username: ${{ secrets.EC2_USER }}
+            key: ${{ secrets.EC2_SSH_KEY }}
+            script: |
+              echo "Moving to project directory"
+              cd ~/car-rental
+  
+              echo "Pulling latest image"
+              docker pull ${{ secrets.DOCKER_USERNAME }}/car-rental-app
+  
+              echo "Stopping old containers"
+              docker compose down
+  
+              echo "Starting new containers"
+              docker compose up -d
+  
+              echo "Deployment done"
