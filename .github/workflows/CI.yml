@@ -68,10 +68,7 @@ jobs:
               echo "SSH Connected Successfully"
               whoami
               pwd
-        - name: Debug key length
-          run: echo "Key length is ${#EC2_SSH_KEY}"
-          env:
-            EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+
         - name: Deploy to EC2
           uses: appleboy/ssh-action@v0.1.10
           with:
