@@ -43,16 +43,21 @@ jobs:
     needs: build
 
     steps:
+
+      - name: Create SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Test SSH connection
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo CONNECTED"
+
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ~/car-rental
-
-            docker pull ${{ secrets.DOCKER_USERNAME }}/car-rental-app
-
-            docker compose down
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+            cd ~/car-rental &&
+            docker pull ${{ secrets.DOCKER_USERNAME }}/car-rental-app &&
+            docker compose down &&
             docker compose up -d
+          "
