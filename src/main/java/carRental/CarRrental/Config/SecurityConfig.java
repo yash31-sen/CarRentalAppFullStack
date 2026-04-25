@@ -26,7 +26,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:4200"); // Angular
+        config.addAllowedOrigin("*"); // Angular
         // If deployed → put your frontend URL or IP
 
         config.addAllowedHeader("*");
