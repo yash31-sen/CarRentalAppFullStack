@@ -16,5 +16,7 @@ public class CarCreateRequest {
     private FuelType fuelType;
     private TransmissionType transmission;
     private double pricePerDay;
-    private String currentLocation;
+    // 👇 REMOVED currentLocation
+    // location is now auto set from
+    // ServiceCity.parkingAddress
 }

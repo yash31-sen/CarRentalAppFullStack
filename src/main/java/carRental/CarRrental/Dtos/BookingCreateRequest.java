@@ -1,6 +1,6 @@
 package carRental.CarRrental.Dtos;
 
-import carRental.CarRrental.Models.BookingType;
+import carRental.CarRrental.Models.TripType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,13 +12,18 @@ public class BookingCreateRequest {
 
     private Long carId;
 
-    private BookingType bookingType; // SELF_DRIVE or WITH_DRIVER
+    private RegisterRequest.BookingType bookingType;        // SELF_DRIVE or WITH_DRIVER
+
+    private TripType tripType;              // 👈 NEW - ROUND_TRIP or ONE_WAY
 
     private LocalDate startDate;
     private LocalDate endDate;
 
-    private String pickupLocation;
-    private String dropLocation;
+    private String pickupCity;              // 👈 NEW - "Indore"
+    private String dropCity;               // 👈 NEW - "Bhopal" or "Indore"
+
+    private String pickupLocation;          // "Indore Railway Station"
+    private String dropLocation;            // "Bhopal Bus Stand"
 
     // required only for self drive
     private String drivingLicenseNumber;

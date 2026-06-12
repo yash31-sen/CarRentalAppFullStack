@@ -25,19 +25,18 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowCredentials(true);
-        config.addAllowedOrigin("*"); // Angular
-        // If deployed → put your frontend URL or IP
+        config.setAllowCredentials(true); // ✅ keep this
+
+        config.addAllowedOriginPattern("*"); // ✅ FIX (NOT addAllowedOrigin)
 
         config.addAllowedHeader("*");
-        config.addAllowedMethod("*"); // GET, POST, PUT, DELETE, OPTIONS
+        config.addAllowedMethod("*");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
 
         return source;
     }
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http

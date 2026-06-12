@@ -27,4 +27,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     boolean existsOverlappingBooking(@Param("carId") Long carId,
                                      @Param("startDate") LocalDate startDate,
                                      @Param("endDate") LocalDate endDate);
+//
+//    @Query("""
+//
+//SELECT COALESCE(SUM(b.totalAmount), 0)
+//
+//FROM Booking b
+//
+//""")
+//    double getTotalRevenue();
 }

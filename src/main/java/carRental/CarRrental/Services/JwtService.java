@@ -60,4 +60,7 @@ public class JwtService {
                 .build()
                 .parseSignedClaims(token);
     }
+    public String extractRole(String token) {
+        return parseToken(token).getPayload().get("role", String.class);
+    }
 }

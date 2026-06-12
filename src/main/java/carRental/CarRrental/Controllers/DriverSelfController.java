@@ -2,6 +2,7 @@ package carRental.CarRrental.Controllers;
 
 import carRental.CarRrental.Dtos.DriverLocationUpdateRequest;
 import carRental.CarRrental.Dtos.DriverStatusUpdateRequest;
+import carRental.CarRrental.Dtos.ResetPasswordRequest;
 import carRental.CarRrental.Models.DriverProfile;
 import carRental.CarRrental.Services.DriverSelfService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,7 +29,7 @@ public class DriverSelfController {
     @PreAuthorize("hasRole('DRIVER')")
     @PatchMapping("/location")
     public DriverProfile updateLocation(Authentication authentication,
-                                        @RequestBody DriverLocationUpdateRequest req) {
+                                                             @RequestBody DriverLocationUpdateRequest req) {
         String email = authentication.getName();
         return driverSelfService.updateMyLocation(email, req.getCurrentLocation());
     }
@@ -36,7 +37,7 @@ public class DriverSelfController {
     @PreAuthorize("hasRole('DRIVER')")
     @PatchMapping("/status")
     public DriverProfile updateStatus(Authentication authentication,
-                                      @RequestBody DriverStatusUpdateRequest req) {
+                                                           @RequestBody DriverStatusUpdateRequest req) {
         String email = authentication.getName();
         return driverSelfService.updateMyStatus(email, req.getStatus());
     }

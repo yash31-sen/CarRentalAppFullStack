@@ -5,6 +5,8 @@ import carRental.CarRrental.Dtos.CarUpdateRequest;
 import carRental.CarRrental.Models.Car;
 import carRental.CarRrental.Services.AdminCarService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,10 +21,14 @@ public class AdminCarController {
         this.adminCarService = adminCarService;
     }
 
+
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PostMapping
-    public Car addCar(@RequestBody CarCreateRequest req) {
-        return adminCarService.addCar(req);
+    public Car addCar(
+            @RequestBody CarCreateRequest req,
+            @AuthenticationPrincipal UserDetails userDetails  // 👈 NEW
+    ) {
+        return adminCarService.addCar(req, userDetails.getUsername());
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
@@ -49,4 +55,6 @@ public class AdminCarController {
         adminCarService.disableCar(id);
         return "Car disabled";
     }
+
+
 }

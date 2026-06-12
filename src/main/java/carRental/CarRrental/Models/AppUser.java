@@ -31,4 +31,13 @@ public class AppUser {
 
     @Column(nullable = false, name = "email_verified")
     private boolean emailVerified = false;
+
+    @Column(nullable = false, name = "is_active")
+    public boolean isActive = true;
+
+    @Column(name = "city")
+    private String city;                // 👈 NEW
+    // nullable because
+    // USER and DRIVER
+    // don't need a city
 }

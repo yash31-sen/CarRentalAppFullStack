@@ -2,11 +2,15 @@ package carRental.CarRrental.Controllers;
 
 import carRental.CarRrental.Dtos.RegisterRequest;
 import carRental.CarRrental.Services.AuthService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import carRental.CarRrental.Dtos.AuthResponse;
 import carRental.CarRrental.Dtos.LoginRequest;
 import carRental.CarRrental.Dtos.ForgotPasswordRequest;
 import carRental.CarRrental.Dtos.ResetPasswordRequest;
+
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -19,16 +23,20 @@ public class AuthController {
 
     // Register API
     @PostMapping("/register")
-    public String register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<Map<String, String>> register(@RequestBody RegisterRequest request) {
         authService.register(request);
-        return "Registration successful. Please check email for verification link.";
+
+        return ResponseEntity.ok(
+                Map.of("message", "Registration successful. Please check email for verification link.")
+        );
     }
 
     // Email Verify API
     @GetMapping("/verify")
-    public String verify(@RequestParam String token) {
-        authService.verifyEmail(token);
-        return "Email verified successfully.";
+    public ResponseEntity<AuthResponse> verify(
+            @RequestParam String token) {
+        AuthResponse response = authService.verifyEmail(token);
+        return ResponseEntity.ok(response);     // ✅ returns JWT!
     }
     @PostMapping("/login")
     public AuthResponse login(@RequestBody LoginRequest request) {

@@ -1,5 +1,6 @@
 package carRental.CarRrental.Services;
 
+import carRental.CarRrental.Dtos.ResetPasswordRequest;
 import carRental.CarRrental.Models.DriverProfile;
 import carRental.CarRrental.Repositories.DriverProfileRepository;
 import org.springframework.stereotype.Service;

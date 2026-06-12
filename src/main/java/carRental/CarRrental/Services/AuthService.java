@@ -7,6 +7,7 @@ import carRental.CarRrental.Models.UserRole;
 import carRental.CarRrental.Models.UserToken;
 import carRental.CarRrental.Repositories.AppUserRepository;
 import carRental.CarRrental.Repositories.UserTokenRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +15,7 @@ import java.time.Instant;
 
 import carRental.CarRrental.Models.TokenType;
 import carRental.CarRrental.Models.UserRole;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthService {
@@ -55,14 +57,15 @@ public class AuthService {
                 .email(email)
                 .passwordHash(passwordEncoder.encode(req.getPassword()))
                 .role(UserRole.USER)              // force USER
-                .emailVerified(false)             // not verified yet
+                .emailVerified(false)   // not verified yet
+                .isActive(true)
                 .build();
 
         AppUser savedUser = userRepository.save(user);
 
         UserToken verifyToken = tokenService.createEmailVerificationToken(savedUser);
 
-        String link = "http://localhost:8080/auth/verify?token=" + verifyToken.getToken();
+        String link = "http://localhost:4200/verify?token=" + verifyToken.getToken();
 
         emailService.sendEmail(
                 savedUser.getEmail(),
@@ -94,21 +97,39 @@ public class AuthService {
         return new AuthResponse(jwt, "Bearer");
     }
 
-    public void verifyEmail(String token) {
+    public AuthResponse verifyEmail(String token) {
+
         UserToken t = tokenRepository
                 .findByTokenAndType(token, TokenType.VERIFY_EMAIL)
-                .orElseThrow(() -> new RuntimeException("Invalid token"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Invalid token"));
+
         if (t.isUsed()) {
-            throw new RuntimeException("Token already used");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Token already used");
         }
+
         if (t.isExpired()) {
-            throw new RuntimeException("Token expired");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Token expired");
         }
+
+        // verify email
         AppUser user = t.getUser();
         user.setEmailVerified(true);
         userRepository.save(user);
+
+        // mark token used
         t.setUsedAt(Instant.now());
         tokenRepository.save(t);
+
+        // 👇 NEW - generate JWT and return
+        // user is now verified and logged in!
+        String jwt = jwtService.generateToken(user);
+        return new AuthResponse(jwt, "Bearer");  // ← return token!
     }
     public void forgotPassword(ForgotPasswordRequest req) {
         String email = req.getEmail().trim().toLowerCase();
@@ -136,18 +157,5 @@ public class AuthService {
         t.setUsedAt(Instant.now());
         tokenRepository.save(t);
     }
-    public void createAdmin(CreateAdminRequest req) {
-        String email = req.getEmail().trim().toLowerCase();
-        if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email already registered");
-        }
-        AppUser admin = AppUser.builder()
-                .name(req.getName())
-                .email(email)
-                .passwordHash(passwordEncoder.encode(req.getPassword()))
-                .role(UserRole.ADMIN)
-                .emailVerified(true) // admin created by super admin, so verified
-                .build();
-        userRepository.save(admin);
-    }
+
 }
