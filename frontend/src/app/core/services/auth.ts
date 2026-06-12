@@ -15,6 +15,10 @@ export class AuthService {
     return this.http.post<any>(`${this.baseUrl}/login`, data);
   }
 
+  googleLogin(credential: string) {
+    return this.http.post<any>(`${this.baseUrl}/google`, { credential });
+  }
+
   register(data: any) {
     return this.http.post(`${this.baseUrl}/register`, data);
   }

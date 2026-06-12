@@ -8,6 +8,7 @@ import carRental.CarRrental.Dtos.AuthResponse;
 import carRental.CarRrental.Dtos.LoginRequest;
 import carRental.CarRrental.Dtos.ForgotPasswordRequest;
 import carRental.CarRrental.Dtos.ResetPasswordRequest;
+import carRental.CarRrental.Dtos.GoogleLoginRequest;
 
 import java.util.Map;
 
@@ -41,6 +42,10 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+    @PostMapping("/google")
+    public AuthResponse googleLogin(@RequestBody GoogleLoginRequest request) {
+        return authService.googleLogin(request);
     }
 
 

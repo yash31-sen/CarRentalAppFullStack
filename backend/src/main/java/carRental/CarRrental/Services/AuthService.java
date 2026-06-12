@@ -10,8 +10,12 @@ import carRental.CarRrental.Repositories.UserTokenRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
 
 import carRental.CarRrental.Models.TokenType;
 import carRental.CarRrental.Models.UserRole;
@@ -94,6 +98,67 @@ public class AuthService {
 
         String jwt = jwtService.generateToken(user);
 
+        return new AuthResponse(jwt, "Bearer");
+    }
+
+    @SuppressWarnings("unchecked")
+    public AuthResponse googleLogin(GoogleLoginRequest req) {
+        String idToken = req.getCredential();
+        if (idToken == null || idToken.trim().isEmpty()) {
+            throw new RuntimeException("Google ID Token is missing");
+        }
+
+        // Call Google Tokeninfo API
+        String googleUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken;
+        RestTemplate restTemplate = new RestTemplate();
+        Map<String, Object> body;
+        try {
+            ResponseEntity<Map> response = restTemplate.getForEntity(googleUrl, Map.class);
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                throw new RuntimeException("Invalid Google token");
+            }
+            body = (Map<String, Object>) response.getBody();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to verify Google token: " + e.getMessage());
+        }
+
+        // Extract user information
+        String email = (String) body.get("email");
+        if (email == null) {
+            throw new RuntimeException("Email not provided by Google token");
+        }
+        email = email.trim().toLowerCase();
+
+        String name = (String) body.get("name");
+        if (name == null || name.trim().isEmpty()) {
+            name = email.split("@")[0];
+        }
+
+        // Check if user exists
+        AppUser user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            // Register new user
+            user = AppUser.builder()
+                    .name(name)
+                    .email(email)
+                    .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .role(UserRole.USER)
+                    .emailVerified(true) // Google verified the email
+                    .isActive(true)
+                    .build();
+            user = userRepository.save(user);
+        } else {
+            // If user exists, ensure email is verified
+            if (!user.isEmailVerified()) {
+                user.setEmailVerified(true);
+                user = userRepository.save(user);
+            }
+            if (!user.isActive()) {
+                throw new RuntimeException("User account is inactive");
+            }
+        }
+
+        String jwt = jwtService.generateToken(user);
         return new AuthResponse(jwt, "Bearer");
     }
 
