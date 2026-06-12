@@ -33,7 +33,7 @@ export class VerifyEmail implements OnInit {
     next: (res: any) => {
 
       // ✅ Save JWT
-      this.authService.setToken(res.token, 'Bearer');
+      this.authService.setToken(res.token, 'Bearer', res.refreshToken);
       this.message = '✅ Email verified! Logging you in...';
       this.success = true;
 

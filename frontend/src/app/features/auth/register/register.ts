@@ -65,7 +65,7 @@ export class Register implements OnInit {
     this.successMessage = '';
     this.authService.googleLogin(response.credential).subscribe({
       next: (res: any) => {
-        this.authService.setToken(res.token, res.tokenType);
+        this.authService.setToken(res.token, res.tokenType, res.refreshToken);
         const role = this.authService.getRole();
         this.successMessage = 'Login successful! Redirecting...';
         this.redirectUser(role);

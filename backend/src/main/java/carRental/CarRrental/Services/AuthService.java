@@ -97,8 +97,9 @@ public class AuthService {
         }
 
         String jwt = jwtService.generateToken(user);
+        UserToken refreshToken = tokenService.createRefreshToken(user);
 
-        return new AuthResponse(jwt, "Bearer");
+        return new AuthResponse(jwt, "Bearer", refreshToken.getToken());
     }
 
     @SuppressWarnings("unchecked")
@@ -159,7 +160,8 @@ public class AuthService {
         }
 
         String jwt = jwtService.generateToken(user);
-        return new AuthResponse(jwt, "Bearer");
+        UserToken refreshToken = tokenService.createRefreshToken(user);
+        return new AuthResponse(jwt, "Bearer", refreshToken.getToken());
     }
 
     public AuthResponse verifyEmail(String token) {
@@ -194,7 +196,40 @@ public class AuthService {
         // 👇 NEW - generate JWT and return
         // user is now verified and logged in!
         String jwt = jwtService.generateToken(user);
-        return new AuthResponse(jwt, "Bearer");  // ← return token!
+        UserToken refreshToken = tokenService.createRefreshToken(user);
+        return new AuthResponse(jwt, "Bearer", refreshToken.getToken());  // ← return token!
+    }
+
+    public AuthResponse refreshToken(RefreshTokenRequest req) {
+        String rawToken = req.getRefreshToken();
+        if (rawToken == null || rawToken.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Refresh token is missing");
+        }
+
+        UserToken token = tokenRepository.findByTokenAndType(rawToken, TokenType.REFRESH_TOKEN)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+
+        if (token.isUsed()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token has already been used");
+        }
+
+        if (token.isExpired()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token has expired");
+        }
+
+        // Perform rotation
+        token.setUsedAt(Instant.now());
+        tokenRepository.save(token);
+
+        AppUser user = token.getUser();
+        if (!user.isActive()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User account is inactive");
+        }
+
+        String newJwt = jwtService.generateToken(user);
+        UserToken newRefreshToken = tokenService.createRefreshToken(user);
+
+        return new AuthResponse(newJwt, "Bearer", newRefreshToken.getToken());
     }
     public void forgotPassword(ForgotPasswordRequest req) {
         String email = req.getEmail().trim().toLowerCase();

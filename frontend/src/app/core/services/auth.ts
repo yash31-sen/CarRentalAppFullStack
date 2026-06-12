@@ -23,9 +23,12 @@ export class AuthService {
     return this.http.post(`${this.baseUrl}/register`, data);
   }
 
-  setToken(token: string, type: string) {
+  setToken(token: string, type: string, refreshToken?: string) {
     const fullToken = `${type} ${token}`;
     localStorage.setItem('token', fullToken);
+    if (refreshToken) {
+      localStorage.setItem('refreshToken', refreshToken);
+    }
 
     const r = this.getRole();
     this.roleSignal.set(r);
@@ -33,7 +36,17 @@ export class AuthService {
 
   logout() {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     this.roleSignal.set(null);
+  }
+
+  getRefreshToken() {
+    return localStorage.getItem('refreshToken');
+  }
+
+  refreshToken() {
+    const refreshToken = this.getRefreshToken();
+    return this.http.post<any>(`${this.baseUrl}/refresh`, { refreshToken });
   }
 
   getToken() {

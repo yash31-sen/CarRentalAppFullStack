@@ -29,6 +29,11 @@ public class TokenService {
         return createToken(user, TokenType.RESET_PASSWORD, Duration.ofMinutes(15));
     }
 
+    // Refresh token (long expiry)
+    public UserToken createRefreshToken(AppUser user) {
+        return createToken(user, TokenType.REFRESH_TOKEN, Duration.ofDays(7));
+    }
+
     private UserToken createToken(AppUser user, TokenType type, Duration ttl) {
         String rawToken = UUID.randomUUID().toString(); // simple + unique
 
