@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
  
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { environment } from '../../../../environments/environment';
 
 declare var google: any;
 
@@ -40,7 +41,7 @@ export class Register implements OnInit {
   initGoogleSignIn() {
     if (typeof google !== 'undefined') {
       google.accounts.id.initialize({
-        client_id: '109876543210-placeholder.apps.googleusercontent.com',
+        client_id: environment.googleClientId,
         callback: this.handleGoogleCredential.bind(this)
       });
       const btnEl = document.getElementById('google-btn');
