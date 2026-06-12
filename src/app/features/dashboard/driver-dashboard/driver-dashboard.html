@@ -1,0 +1,98 @@
+<div class="driver-dashboard-container">
+  
+  <div class="header-banner">
+    <h2>Driver Control Center</h2>
+    <p>Manage your real-time status and operational location</p>
+  </div>
+
+  <!-- Error/Success Alerts -->
+  <div class="alert-container" *ngIf="errorMessage || successMessage">
+    <div class="error-msg" *ngIf="errorMessage">⚠️ {{ errorMessage }}</div>
+    <div class="success-msg" *ngIf="successMessage">✨ {{ successMessage }}</div>
+  </div>
+
+  <div class="dashboard-grid">
+
+    <!-- Loading State -->
+    <div class="card loading-card" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Fetching your operational profile...</p>
+    </div>
+
+    <!-- Profile Details Card -->
+    <div class="card profile-card" *ngIf="!loading && profile">
+      
+      <div class="profile-header">
+        <div class="avatar-circle">
+          {{ profile.user?.name ? profile.user.name[0].toUpperCase() : 'D' }}
+        </div>
+        <div class="profile-title">
+          <h3>{{ profile.user?.name || 'Driver Name' }}</h3>
+          <p class="email">{{ profile.user?.email || 'driver@email.com' }}</p>
+        </div>
+        <div class="badge-status" [ngClass]="profile.status">
+          {{ profile.status }}
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="details-grid">
+        <div class="detail-item">
+          <label>License Number</label>
+          <span>{{ profile.licenseNumber }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Experience Years</label>
+          <span>{{ profile.experienceYears }} Years</span>
+        </div>
+        <div class="detail-item">
+          <label>Profile Status</label>
+          <span class="status-text" [ngClass]="profile.active ? 'active' : 'inactive'">
+            {{ profile.active ? 'Active Employee' : 'Suspended' }}
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Actions/Controls Card -->
+    <div class="card controls-card" *ngIf="!loading && profile">
+      
+      <div class="section-header">
+        <h3>Operational Status</h3>
+        <p class="subtitle">Set your availability for accepting bookings</p>
+      </div>
+      
+      <div class="status-selector">
+        <button [class.active]="profile.status === 'AVAILABLE'" 
+                (click)="updateStatus('AVAILABLE')" class="status-btn available">
+          Available
+        </button>
+        <button [class.active]="profile.status === 'BUSY'" 
+                (click)="updateStatus('BUSY')" class="status-btn busy">
+          Busy
+        </button>
+        <button [class.active]="profile.status === 'OFFLINE'" 
+                (click)="updateStatus('OFFLINE')" class="status-btn offline">
+          Offline
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-header">
+        <h3>Current Location</h3>
+        <p class="subtitle">Update your parking or pickup zone</p>
+      </div>
+      
+      <div class="location-form">
+        <input type="text" [(ngModel)]="locationInput" placeholder="Enter current city or area" />
+        <button (click)="updateLocation()" class="primary">Update Zone</button>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

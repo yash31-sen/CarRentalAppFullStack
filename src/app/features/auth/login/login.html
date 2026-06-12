@@ -1,0 +1,33 @@
+<div class="auth-container">
+
+  <div class="auth-card">
+
+    <h2>Welcome Back</h2>
+
+    <form [formGroup]="loginForm" (ngSubmit)="login()">
+
+      <div class="form-group">
+        <input type="email" formControlName="email" placeholder="Email Address" />
+      </div>
+
+      <div class="form-group">
+        <input type="password" formControlName="password" placeholder="Password" />
+      </div>
+
+      <button type="submit" [disabled]="loginForm.invalid || loading">
+        {{ loading ? 'Logging in...' : 'Login' }}
+      </button>
+
+    </form>
+
+    <!-- Messages -->
+    <p class="success" *ngIf="successMessage">{{ successMessage }}</p>
+    <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <div class="auth-helper">
+      Don't have an account? <a routerLink="/register">Register here</a>
+    </div>
+
+  </div>
+
+</div>

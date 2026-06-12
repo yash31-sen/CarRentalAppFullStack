@@ -1,0 +1,191 @@
+<div class="manage-admins">
+
+  <!-- HEADER -->
+  <div class="top-bar">
+    <h2>Manage Admins</h2>
+  </div>
+
+  <!-- POPUP -->
+  <div
+    class="confirm-box"
+    *ngIf="showActionPopup">
+
+    <div class="popup">
+
+      <h3>Confirm Action</h3>
+
+      <p>
+        Are you sure you want to
+        <b>{{ actionType }}</b>
+        this admin?
+      </p>
+
+      <div class="popup-actions">
+
+        <button
+          class="cancel"
+          (click)="cancelAction()">
+
+          Cancel
+
+        </button>
+
+        <button
+          class="confirm"
+          (click)="confirmAction()">
+
+          Confirm
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- CREATE ADMIN -->
+  <div class="card">
+
+    <h3>Create Admin</h3>
+
+    <form
+      [formGroup]="adminForm"
+      (ngSubmit)="createAdmin()">
+
+      <div class="form-grid">
+
+        <input
+          type="text"
+          placeholder="Name"
+          formControlName="name">
+
+        <input
+          type="email"
+          placeholder="Email"
+          formControlName="email">
+
+        <input
+          type="password"
+          placeholder="Password"
+          formControlName="password">
+
+        <input
+          type="text"
+          placeholder="City"
+          formControlName="city">
+
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="loading || adminForm.invalid">
+
+        {{ loading ? 'Creating...' : 'Create Admin' }}
+
+      </button>
+
+    </form>
+
+  </div>
+
+  <!-- ADMINS TABLE -->
+  <div class="card">
+
+    <h3>All Admins</h3>
+
+    <!-- SEARCH FILTERS -->
+    <div class="filters-grid">
+      <input type="text" [(ngModel)]="searchName" placeholder="Filter by Name..." />
+      <input type="text" [(ngModel)]="searchEmail" placeholder="Filter by Email..." />
+      <input type="text" [(ngModel)]="searchCity" placeholder="Filter by City..." />
+      <select [(ngModel)]="searchStatus">
+        <option value="">All Statuses</option>
+        <option value="active">Active Only</option>
+        <option value="inactive">Inactive Only</option>
+      </select>
+    </div>
+
+    <table>
+
+      <thead>
+
+      <tr>
+
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>City</th>
+        <th>Status</th>
+        <th>Actions</th>
+
+      </tr>
+
+      </thead>
+
+      <tbody>
+
+      <tr *ngFor="let admin of filteredAdmins">
+
+        <td>{{ admin.id }}</td>
+
+        <td>{{ admin.name }}</td>
+
+        <td>{{ admin.email }}</td>
+
+        <td>{{ admin.city }}</td>
+
+        <td>
+
+          <span
+            class="status"
+            [ngClass]="admin.active ? 'active' : 'inactive'">
+
+            {{ admin.active ? 'ACTIVE' : 'INACTIVE' }}
+
+          </span>
+
+        </td>
+
+        <td class="actions">
+
+          <!-- DEACTIVATE -->
+          <button
+            *ngIf="admin.active"
+            class="deactivate"
+            (click)="openPopup(admin.id, 'deactivate')">
+
+            Deactivate
+
+          </button>
+
+          <!-- REACTIVATE -->
+          <button
+            *ngIf="!admin.active"
+            class="reactivate"
+            (click)="openPopup(admin.id, 'reactivate')">
+
+            Reactivate
+
+          </button>
+
+          <!-- DELETE -->
+          <button
+            class="delete"
+            (click)="openPopup(admin.id, 'delete')">
+
+            Delete
+
+          </button>
+
+        </td>
+
+      </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

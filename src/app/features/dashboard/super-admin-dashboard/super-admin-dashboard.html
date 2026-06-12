@@ -1,0 +1,190 @@
+<div class="dashboard-container">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <h2 class="title">
+      Super Admin
+    </h2>
+
+    <button
+      [class.active]="activeTab === 'dashboard'"
+      (click)="navigate('dashboard')">
+
+      Dashboard
+
+    </button>
+
+    <button
+      [class.active]="activeTab === 'admins'"
+      (click)="navigate('admins')">
+
+      Manage Admins
+
+    </button>
+
+    <button
+      [class.active]="activeTab === 'users'"
+      (click)="navigate('users')">
+
+      Manage Users
+
+    </button>
+
+    <button
+      [class.active]="activeTab === 'drivers'"
+      (click)="navigate('drivers')">
+
+      Manage Drivers
+
+    </button>
+
+    <button
+      [class.active]="activeTab === 'cities'"
+      (click)="navigate('cities')">
+
+      Manage Cities
+
+    </button>
+
+    <button
+      [class.active]="activeTab === 'pricing'"
+      (click)="navigate('pricing')">
+
+      Manage Pricing
+
+    </button>
+
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div *ngIf="activeTab === 'dashboard'">
+
+      <div class="cards">
+
+        <!-- ADMINS -->
+        <div class="card">
+
+          <h3>
+            {{ stats.totalAdmins }}
+          </h3>
+
+          <p>
+            Total Admins
+          </p>
+
+        </div>
+
+        <!-- USERS -->
+        <div class="card">
+
+          <h3>
+            {{ stats.totalUsers }}
+          </h3>
+
+          <p>
+            Total Users
+          </p>
+
+        </div>
+
+        <!-- DRIVERS -->
+        <div class="card">
+
+          <h3>
+            {{ stats.totalDrivers }}
+          </h3>
+
+          <p>
+            Total Drivers
+          </p>
+
+        </div>
+
+        <!-- CITIES -->
+        <div class="card">
+
+          <h3>
+            {{ stats.totalCities }}
+          </h3>
+
+          <p>
+            Total Cities
+          </p>
+
+        </div>
+
+        <!-- CARS -->
+        <div class="card">
+
+          <h3>
+            {{ stats.totalCars }}
+          </h3>
+
+          <p>
+            Total Cars
+          </p>
+
+        </div>
+
+        <!-- BOOKINGS -->
+        <div class="card">
+
+          <h3>
+            {{ stats.totalBookings }}
+          </h3>
+
+          <p>
+            Total Bookings
+          </p>
+
+        </div>
+
+        <!-- REVENUE -->
+        <div class="card revenue">
+
+          <h3>
+            ₹ {{ stats.totalRevenue }}
+          </h3>
+
+          <p>
+            Total Revenue
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- MANAGE ADMINS -->
+    <app-manage-admins
+      *ngIf="activeTab === 'admins'">
+    </app-manage-admins>
+
+    <!-- MANAGE USERS -->
+    <app-manage-users
+      *ngIf="activeTab === 'users'">
+    </app-manage-users>
+
+    <!-- MANAGE DRIVERS -->
+    <app-manage-drivers
+      *ngIf="activeTab === 'drivers'">
+    </app-manage-drivers>
+
+    <!-- MANAGE CITIES -->
+    <app-manage-cities
+      *ngIf="activeTab === 'cities'">
+    </app-manage-cities>
+
+    <!-- MANAGE PRICING -->
+    <app-manage-pricing
+      *ngIf="activeTab === 'pricing'">
+    </app-manage-pricing>
+
+  </div>
+
+</div>

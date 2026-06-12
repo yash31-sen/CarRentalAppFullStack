@@ -1,0 +1,146 @@
+<div class="manage-users">
+
+  <!-- HEADER -->
+  <div class="top-bar">
+
+    <h2>
+      Manage Users
+    </h2>
+
+  </div>
+
+  <!-- POPUP -->
+  <div
+    class="confirm-box"
+    *ngIf="showActionPopup">
+
+    <div class="popup">
+
+      <h3>Confirm Action</h3>
+
+      <p>
+        Are you sure you want to
+        <b>{{ actionType }}</b>
+        this user?
+      </p>
+
+      <div class="popup-actions">
+
+        <button
+          class="cancel"
+          (click)="cancelAction()">
+
+          Cancel
+
+        </button>
+
+        <button
+          class="confirm"
+          (click)="confirmAction()">
+
+          Confirm
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- USERS TABLE -->
+  <div class="card">
+
+    <h3>All Users</h3>
+
+    <!-- SEARCH FILTERS -->
+    <div class="filters-grid">
+      <input type="text" [(ngModel)]="searchName" placeholder="Filter by Name..." />
+      <input type="text" [(ngModel)]="searchEmail" placeholder="Filter by Email..." />
+      <select [(ngModel)]="searchStatus">
+        <option value="">All Statuses</option>
+        <option value="active">Active Only</option>
+        <option value="inactive">Inactive Only</option>
+      </select>
+    </div>
+
+    <table>
+
+      <thead>
+
+      <tr>
+
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Actions</th>
+
+      </tr>
+
+      </thead>
+
+      <tbody>
+
+      <tr *ngFor="let user of filteredUsers">
+
+        <td>{{ user.id }}</td>
+
+        <td>{{ user.name }}</td>
+
+        <td>{{ user.email }}</td>
+
+        <td>
+
+          <span
+            class="status"
+            [ngClass]="user.active ? 'active' : 'inactive'">
+
+            {{ user.active ? 'ACTIVE' : 'INACTIVE' }}
+
+          </span>
+
+        </td>
+
+        <td class="actions">
+
+          <!-- DEACTIVATE -->
+          <button
+            *ngIf="user.active"
+            class="deactivate"
+            (click)="openPopup(user.id, 'deactivate')">
+
+            Deactivate
+
+          </button>
+
+          <!-- REACTIVATE -->
+          <button
+            *ngIf="!user.active"
+            class="reactivate"
+            (click)="openPopup(user.id, 'reactivate')">
+
+            Reactivate
+
+          </button>
+
+          <!-- DELETE -->
+          <button
+            class="delete"
+            (click)="openPopup(user.id, 'delete')">
+
+            Delete
+
+          </button>
+
+        </td>
+
+      </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

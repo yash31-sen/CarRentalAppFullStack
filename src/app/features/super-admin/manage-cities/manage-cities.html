@@ -1,0 +1,166 @@
+<div class="manage-cities">
+
+  <!-- HEADER -->
+  <div class="top-bar">
+
+    <h2>
+      Manage Cities
+    </h2>
+
+  </div>
+
+  <!-- CREATE CITY -->
+  <div class="card">
+
+    <h3>
+      Add City
+    </h3>
+
+    <form
+      [formGroup]="cityForm"
+      (ngSubmit)="createCity()">
+
+      <div class="form-grid">
+
+        <!-- CITY NAME -->
+        <input
+          type="text"
+          placeholder="City Name"
+          formControlName="cityName">
+
+        <!-- PARKING ADDRESS -->
+        <input
+          type="text"
+          placeholder="Parking Address"
+          formControlName="parkingAddress">
+
+        <!-- CONTACT -->
+        <input
+          type="text"
+          placeholder="Parking Contact"
+          formControlName="parkingContact">
+
+        <!-- ONE WAY FEE -->
+        <input
+          type="number"
+          placeholder="One Way Fee"
+          formControlName="oneWayFee">
+
+        <!-- ADMIN -->
+        <select
+          formControlName="adminId">
+
+          <option value="">
+            Select Admin (Optional)
+          </option>
+
+          <option
+            *ngFor="let admin of admins"
+            [value]="admin.id">
+
+            {{ admin.name }}
+            -
+            {{ admin.city }}
+
+          </option>
+
+        </select>
+
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="loading || cityForm.invalid">
+
+        {{ loading ? 'Creating...' : 'Create City' }}
+
+      </button>
+
+    </form>
+
+  </div>
+
+  <!-- CITIES TABLE -->
+  <div class="card">
+
+    <h3>
+      All Cities
+    </h3>
+
+    <!-- SEARCH FILTERS -->
+    <div class="filters-grid">
+      <input type="text" [(ngModel)]="searchCityName" placeholder="Filter by City Name..." />
+      <input type="text" [(ngModel)]="searchAddress" placeholder="Filter by Address..." />
+      <select [(ngModel)]="searchStatus">
+        <option value="">All Statuses</option>
+        <option value="active">Active Only</option>
+        <option value="inactive">Inactive Only</option>
+      </select>
+    </div>
+
+    <table>
+
+      <thead>
+
+      <tr>
+
+        <th>ID</th>
+        <th>City</th>
+        <th>Parking Address</th>
+        <th>Contact</th>
+        <th>One Way Fee</th>
+        <th>Admin</th>
+        <th>Status</th>
+
+      </tr>
+
+      </thead>
+
+      <tbody>
+
+      <tr *ngFor="let city of filteredCities">
+
+        <td>{{ city.id }}</td>
+
+        <td>{{ city.cityName }}</td>
+
+        <td>{{ city.parkingAddress }}</td>
+
+        <td>{{ city.parkingContact }}</td>
+
+        <td>₹ {{ city.oneWayFee }}</td>
+
+        <td>
+
+          {{
+            city.admin?.name ||
+            'Not Assigned'
+          }}
+
+        </td>
+
+        <td>
+
+          <span
+            class="status"
+            [ngClass]="city.active ? 'active' : 'inactive'">
+
+            {{
+              city.active
+              ? 'ACTIVE'
+              : 'INACTIVE'
+            }}
+
+          </span>
+
+        </td>
+
+      </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

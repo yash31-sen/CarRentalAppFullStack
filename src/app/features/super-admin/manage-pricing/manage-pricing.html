@@ -1,0 +1,239 @@
+<div class="manage-pricing">
+
+  <!-- HEADER -->
+  <div class="top-bar">
+
+    <h2>
+      Pricing Management
+    </h2>
+
+  </div>
+<!-- DELETE POPUP -->
+<div
+  class="confirm-box"
+  *ngIf="showDeletePopup">
+
+  <div class="popup">
+
+    <h3>
+      Confirm Delete
+    </h3>
+
+    <p>
+      Are you sure you want to
+      delete this pricing?
+    </p>
+
+    <div class="popup-actions">
+
+      <button
+        class="cancel"
+        (click)="cancelDelete()">
+
+        Cancel
+
+      </button>
+
+      <button
+        class="delete"
+        (click)="confirmDelete()">
+
+        Delete
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+  <!-- FORM -->
+  <div class="card">
+
+    <h3>
+
+      {{
+        editMode
+        ? 'Update Pricing'
+        : 'Create Pricing'
+      }}
+
+    </h3>
+
+    <form
+      [formGroup]="pricingForm"
+      (ngSubmit)="submitPricing()">
+
+      <div class="form-grid">
+
+        <!-- CAR CLASS -->
+        <select
+          formControlName="carClass">
+
+          <option value="">
+            Select Car Class
+          </option>
+
+          <option
+            *ngFor="let c of carClasses"
+            [value]="c">
+
+            {{ c }}
+
+          </option>
+
+        </select>
+
+        <!-- BASE FARE -->
+        <input
+          type="number"
+          placeholder="Base Fare"
+          formControlName="baseFare">
+
+        <!-- PER DAY RATE -->
+        <input
+          type="number"
+          placeholder="Per Day Rate"
+          formControlName="perDayRate">
+
+        <!-- MIN PER DAY -->
+        <input
+          type="number"
+          placeholder="Min Per Day Rate"
+          formControlName="minPerDayRate">
+
+        <!-- MAX PER DAY -->
+        <input
+          type="number"
+          placeholder="Max Per Day Rate"
+          formControlName="maxPerDayRate">
+
+        <!-- FREE KM -->
+        <input
+          type="number"
+          placeholder="Free KM Per Day"
+          formControlName="freeKmPerDay">
+
+        <!-- EXTRA KM RATE -->
+        <input
+          type="number"
+          placeholder="Extra KM Rate"
+          formControlName="extraKmRate">
+
+      </div>
+
+      <div class="btn-group">
+
+        <button
+          type="submit"
+          [disabled]="loading || pricingForm.invalid">
+
+          {{
+            loading
+            ? 'Saving...'
+            : editMode
+              ? 'Update Pricing'
+              : 'Create Pricing'
+          }}
+
+        </button>
+
+        <button
+          type="button"
+          class="cancel"
+          *ngIf="editMode"
+          (click)="resetForm()">
+
+          Cancel
+
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+
+    <h3>
+      Pricing List
+    </h3>
+
+    <!-- SEARCH FILTERS -->
+    <div class="filters-grid">
+      <select [(ngModel)]="searchCarClass">
+        <option value="">All Car Classes</option>
+        <option *ngFor="let c of carClasses" [value]="c">{{ c }}</option>
+      </select>
+      <input type="number" [(ngModel)]="searchMaxBaseFare" placeholder="Max Base Fare..." />
+    </div>
+
+    <table>
+
+      <thead>
+
+      <tr>
+
+        <th>Class</th>
+        <th>Base Fare</th>
+        <th>Per Day</th>
+        <th>Min Day</th>
+        <th>Max Day</th>
+        <th>Free KM</th>
+        <th>Extra KM</th>
+        <th>Actions</th>
+
+      </tr>
+
+      </thead>
+
+      <tbody>
+
+      <tr
+        *ngFor="let p of filteredPricing">
+
+        <td>{{ p.carClass }}</td>
+
+        <td>₹ {{ p.baseFare }}</td>
+
+        <td>₹ {{ p.perDayRate }}</td>
+
+        <td>₹ {{ p.minPerDayRate }}</td>
+
+        <td>₹ {{ p.maxPerDayRate }}</td>
+
+        <td>{{ p.freeKmPerDay }} KM</td>
+
+        <td>₹ {{ p.extraKmRate }}</td>
+
+        <td class="actions">
+
+          <button
+            class="edit"
+            (click)="editPricing(p)">
+
+            Edit
+
+          </button>
+
+          <button
+            class="delete"
+            (click)="deletePricing(p.id)">
+
+            Delete
+
+          </button>
+
+        </td>
+
+      </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

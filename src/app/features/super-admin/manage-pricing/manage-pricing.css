@@ -1,0 +1,24 @@
+.manage-pricing {
+  padding: 10px;
+}
+
+.top-bar {
+  margin-bottom: 25px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 15px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}

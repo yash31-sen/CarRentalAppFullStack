@@ -1,22 +1,22 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth-guard';
+import { authGuard } from '../../core/guards/auth-guard';
 
 export const routes: Routes = [
 
   {
     path: 'login',
     loadComponent: () =>
-      import('./features/auth/login/login').then(m => m.Login)
+      import('./login/login').then(m => m.Login)
   },
   {
     path: 'register',
     loadComponent: () =>
-      import('./features/auth/register/register').then(m => m.Register)
+      import('./register/register').then(m => m.Register)
   },
   {
     path: 'verify',
     loadComponent: () =>
-      import('./features/auth/verify-email/verify-email').then(m => m.VerifyEmail)
+      import('./verify-email/verify-email').then(m => m.VerifyEmail)
   },
 
   // 🔐 PROTECTED DASHBOARDS
@@ -24,7 +24,7 @@ export const routes: Routes = [
   {
     path: 'user-dashboard',
     loadComponent: () =>
-      import('./features/dashboard/user-dashboard/user-dashboard')
+      import('../dashboard/user-dashboard/user-dashboard')
         .then(m => m.UserDashboard),
     canActivate: [authGuard],
     data: { roles: ['USER'] }
@@ -32,7 +32,7 @@ export const routes: Routes = [
   {
     path: 'admin-dashboard',
     loadComponent: () =>
-      import('./features/dashboard/admin-dashboard/admin-dashboard')
+      import('../dashboard/admin-dashboard/admin-dashboard')
         .then(m => m.AdminDashboard),
     canActivate: [authGuard],
     data: { roles: ['ADMIN'] }
@@ -40,7 +40,7 @@ export const routes: Routes = [
   {
     path: 'super-admin-dashboard',
     loadComponent: () =>
-      import('./features/dashboard/super-admin-dashboard/super-admin-dashboard')
+      import('../dashboard/super-admin-dashboard/super-admin-dashboard')
         .then(m => m.SuperAdminDashboard),
     canActivate: [authGuard],
     data: { roles: ['SUPER_ADMIN'] }
@@ -48,18 +48,9 @@ export const routes: Routes = [
   {
     path: 'driver-dashboard',
     loadComponent: () =>
-      import('./features/dashboard/driver-dashboard/driver-dashboard')
+      import('../dashboard/driver-dashboard/driver-dashboard')
         .then(m => m.DriverDashboard),
     canActivate: [authGuard],
     data: { roles: ['DRIVER'] }
-  },
-  {
-    path: '',
-    redirectTo: 'login',
-    pathMatch: 'full'
-  },
-  {
-    path: '**',
-    redirectTo: 'login'
   }
 ];

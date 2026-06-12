@@ -1,0 +1,35 @@
+<nav class="navbar">
+
+  <!-- 🔷 LEFT SECTION -->
+  <div class="left-section">
+
+    <!-- Role Badge -->
+    <div *ngIf="role()" class="role-badge" [ngClass]="role() || ''">
+      {{ getShortRole(role()) }}
+    </div>
+
+    <!-- Logo -->
+    <div class="logo">Car Rental</div>
+
+  </div>
+
+  <!-- 🔷 RIGHT ACTIONS -->
+  <div class="actions">
+
+    <ng-container *ngIf="!role()">
+      <button *ngIf="currentRoute === '/login'" (click)="goRegister()">Register</button>
+      <button *ngIf="currentRoute === '/register'" (click)="goLogin()">Login</button>
+
+      <ng-container *ngIf="currentRoute !== '/login' && currentRoute !== '/register'">
+        <button (click)="goLogin()">Login</button>
+        <button (click)="goRegister()">Register</button>
+      </ng-container>
+    </ng-container>
+
+    <ng-container *ngIf="role()">
+      <button (click)="logout()">Logout</button>
+    </ng-container>
+
+  </div>
+
+</nav>

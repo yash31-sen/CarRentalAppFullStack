@@ -1,0 +1,12 @@
+.manage-users {
+  padding: 10px;
+}
+
+.top-bar {
+  margin-bottom: 25px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}

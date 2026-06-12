@@ -1,0 +1,11 @@
+<div style="text-align:center; margin-top:50px;">
+ <h2>{{ message }}</h2>
+
+  <div *ngIf="success">
+    <p>Redirecting...</p>
+  </div>
+
+  <div *ngIf="!success">
+    <a routerLink="/login">Go to Login</a>
+  </div>
+</div>
