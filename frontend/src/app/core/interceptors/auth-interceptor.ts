@@ -1,13 +1,13 @@
 import { inject } from '@angular/core';
-import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { HttpInterceptorFn, HttpErrorResponse, HttpEvent, HttpRequest, HttpHandlerFn } from '@angular/common/http';
 import { AuthService } from '../services/auth';
 import { Router } from '@angular/router';
-import { catchError, switchMap, throwError, BehaviorSubject, filter, take } from 'rxjs';
+import { catchError, switchMap, throwError, BehaviorSubject, filter, take, Observable } from 'rxjs';
 
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
+export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const token = authService.getToken();
@@ -36,7 +36,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   );
 };
 
-function handle401Error(req: any, next: any, authService: AuthService, router: Router) {
+function handle401Error(
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+  authService: AuthService,
+  router: Router
+): Observable<HttpEvent<unknown>> {
   if (!isRefreshing) {
     isRefreshing = true;
     refreshTokenSubject.next(null);
@@ -62,7 +67,7 @@ function handle401Error(req: any, next: any, authService: AuthService, router: R
     );
   } else {
     return refreshTokenSubject.pipe(
-      filter((token) => token !== null),
+      filter((token): token is string => token !== null),
       take(1),
       switchMap((token) => {
         return next(req.clone({
