@@ -25,7 +25,7 @@ public class AdminCarController {
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PostMapping
     public Car addCar(
-            @RequestBody CarCreateRequest req,
+            @jakarta.validation.Valid @RequestBody CarCreateRequest req,
             @AuthenticationPrincipal UserDetails userDetails  // 👈 NEW
     ) {
         return adminCarService.addCar(req, userDetails.getUsername());
@@ -45,7 +45,7 @@ public class AdminCarController {
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PutMapping("/{id}")
-    public Car update(@PathVariable Long id, @RequestBody CarUpdateRequest req) {
+    public Car update(@PathVariable Long id, @jakarta.validation.Valid @RequestBody CarUpdateRequest req) {
         return adminCarService.updateCar(id, req);
     }
 

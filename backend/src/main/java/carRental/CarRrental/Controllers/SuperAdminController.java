@@ -27,7 +27,7 @@ public class SuperAdminController {
 
     @PostMapping("/admins")
     public ResponseEntity<Map<String, String>> createAdmin(
-            @RequestBody CreateAdminRequest req
+            @jakarta.validation.Valid @RequestBody CreateAdminRequest req
     ) {
 
         boolean created = superAdminService.createAdmin(req);
@@ -202,7 +202,7 @@ public class SuperAdminController {
 
     @PostMapping("/cities")
     public ResponseEntity<?> addCity(
-            @RequestBody ServiceCityRequest req
+            @jakarta.validation.Valid @RequestBody ServiceCityRequest req
     ) {
 
         try {
@@ -294,7 +294,7 @@ public class SuperAdminController {
 
     @PostMapping("/pricing")
     public ResponseEntity<?> createPricing(
-            @RequestBody CarPricingRequest req
+            @jakarta.validation.Valid @RequestBody CarPricingRequest req
     ) {
 
         try {
@@ -335,7 +335,7 @@ public class SuperAdminController {
     @PutMapping("/pricing/{id}")
     public ResponseEntity<CarPricing> updatePricing(
             @PathVariable Long id,
-            @RequestBody CarPricingRequest req
+            @jakarta.validation.Valid @RequestBody CarPricingRequest req
     ) {
 
         return ResponseEntity.ok(

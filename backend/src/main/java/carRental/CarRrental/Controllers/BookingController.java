@@ -20,7 +20,7 @@ public class BookingController {
     @PreAuthorize("hasRole('USER')")
     @PostMapping
     public Booking create(Authentication authentication,
-                          @RequestBody BookingCreateRequest req) {
+                          @jakarta.validation.Valid @RequestBody BookingCreateRequest req) {
 
         String email = authentication.getName();
         return bookingService.createBooking(email, req);

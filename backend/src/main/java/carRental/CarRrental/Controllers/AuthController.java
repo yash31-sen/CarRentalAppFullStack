@@ -25,7 +25,7 @@ public class AuthController {
 
     // Register API
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<Map<String, String>> register(@jakarta.validation.Valid @RequestBody RegisterRequest request) {
         authService.register(request);
 
         return ResponseEntity.ok(
@@ -41,7 +41,7 @@ public class AuthController {
         return ResponseEntity.ok(response);     // ✅ returns JWT!
     }
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody LoginRequest request) {
+    public AuthResponse login(@jakarta.validation.Valid @RequestBody LoginRequest request) {
         return authService.login(request);
     }
     @PostMapping("/google")

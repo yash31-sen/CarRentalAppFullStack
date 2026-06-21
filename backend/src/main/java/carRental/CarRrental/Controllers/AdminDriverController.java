@@ -23,7 +23,7 @@ public class AdminDriverController {
 
     @PostMapping
     public ResponseEntity<DriverProfile> add(
-            @RequestBody DriverCreateRequest req) {
+            @jakarta.validation.Valid @RequestBody DriverCreateRequest req) {
         return ResponseEntity.status(201)
                 .body(adminDriverService.addDriver(req));
     }
@@ -37,7 +37,7 @@ public class AdminDriverController {
     @PutMapping("/{id}")
     public ResponseEntity<DriverProfile> update(
             @PathVariable Long id,
-            @RequestBody DriverUpdateRequest req) {
+            @jakarta.validation.Valid @RequestBody DriverUpdateRequest req) {
         return ResponseEntity.ok(
                 adminDriverService.updateDriver(id, req));
     }
