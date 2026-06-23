@@ -1,0 +1,143 @@
+name: Build, Push & Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 1 — Build Docker images & push to Docker Hub
+  # ─────────────────────────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push Images to Docker Hub
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ---------- Backend ----------
+      - name: Build & Push Backend Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/car-rental-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/car-rental-backend:${{ github.sha }}
+
+      # ---------- Frontend ----------
+      - name: Build & Push Frontend Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/car-rental-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/car-rental-frontend:${{ github.sha }}
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 2 — SSH into EC2, pull new images, restart containers
+  # ─────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            mkdir -p ~/car-rental
+            cd ~/car-rental
+
+            # ── Write .env file from GitHub Secrets ──────────────────
+            cat > .env << 'ENVEOF'
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+            ENVEOF
+
+            # ── Write docker-compose.yml ─────────────────────────────
+            cat > docker-compose.yml << 'COMPOSE'
+            version: '3.8'
+
+            services:
+              postgres:
+                image: postgres:15-alpine
+                container_name: postgres_db
+                environment:
+                  POSTGRES_DB: ${POSTGRES_DB}
+                  POSTGRES_USER: ${POSTGRES_USER}
+                  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+                volumes:
+                  - postgres_data:/var/lib/postgresql/data
+                restart: always
+                healthcheck:
+                  test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
+
+              backend:
+                image: ${DOCKERHUB_USERNAME}/car-rental-backend:latest
+                container_name: car_rental_backend
+                depends_on:
+                  postgres:
+                    condition: service_healthy
+                ports:
+                  - "8080:8080"
+                environment:
+                  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+                  SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+                  SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+                  APP_JWT_SECRET: ${JWT_SECRET}
+                  APP_JWT_EXPIRYMINUTES: 60
+                  SPRING_MAIL_HOST: smtp.gmail.com
+                  SPRING_MAIL_PORT: 587
+                  SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+                  SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+                restart: always
+
+              frontend:
+                image: ${DOCKERHUB_USERNAME}/car-rental-frontend:latest
+                container_name: car_rental_frontend
+                ports:
+                  - "80:80"
+                depends_on:
+                  - backend
+                restart: always
+
+            volumes:
+              postgres_data:
+            COMPOSE
+
+            # ── Login to Docker Hub (needed if repos are private) ────
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | \
+              docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+            # ── Pull latest images & restart ─────────────────────────
+            docker compose pull
+            docker compose up -d --remove-orphans
+
+            # ── Prune dangling images to save disk space ─────────────
+            docker image prune -f
+
+            echo "✅ Deployment complete!"

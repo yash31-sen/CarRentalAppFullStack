@@ -1,10 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
 
-  private baseUrl = 'http://localhost:8080/auth';
+  private baseUrl = `${environment.apiUrl}/auth`;
 
   constructor(private http: HttpClient) {}
 
@@ -69,5 +70,17 @@ export class AuthService {
 
   verifyEmail(token: string) {
     return this.http.get(`${this.baseUrl}/verify?token=${token}`);
+  }
+
+  forgotPassword(email: string) {
+    return this.http.post(`${this.baseUrl}/forgot-password`, { email }, { responseType: 'text' });
+  }
+
+  resetPassword(data: any) {
+    return this.http.post(`${this.baseUrl}/reset-password`, data, { responseType: 'text' });
+  }
+
+  setupAccount(data: any) {
+    return this.http.post(`${this.baseUrl}/setup-account`, data, { responseType: 'text' });
   }
 }

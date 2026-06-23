@@ -68,4 +68,10 @@ public class AuthController {
         return "Password reset successful.";
     }
 
+    @PostMapping("/setup-account")
+    public String setupAccount(@RequestBody ResetPasswordRequest request) {
+        authService.setupAccount(request);
+        return "Account setup successful.";
+    }
+
 }

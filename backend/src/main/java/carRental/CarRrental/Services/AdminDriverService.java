@@ -6,6 +6,7 @@ import carRental.CarRrental.Models.AppUser;
 import carRental.CarRrental.Models.DriverProfile;        // 👈 CORRECT
 import carRental.CarRrental.Models.DriverStatus;
 import carRental.CarRrental.Models.UserRole;
+import carRental.CarRrental.Models.UserToken;
 import carRental.CarRrental.Repositories.AppUserRepository;
 import carRental.CarRrental.Repositories.DriverProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,8 @@ public class AdminDriverService {
     private final AppUserRepository userRepository;
     private final DriverProfileRepository driverProfileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
+    private final EmailService emailService;
 
     public DriverProfile addDriver(DriverCreateRequest req) {
 
@@ -41,13 +44,17 @@ public class AdminDriverService {
                     "Driver already exists with license: " + license);
         }
 
+        String rawPassword = (req.getPassword() != null && !req.getPassword().isBlank())
+                ? req.getPassword()
+                : java.util.UUID.randomUUID().toString();
+
         // 1) Create AppUser for login
         AppUser driverUser = AppUser.builder()
                 .name(req.getName())
                 .email(email)
-                .passwordHash(passwordEncoder.encode(req.getPassword()))
+                .passwordHash(passwordEncoder.encode(rawPassword))
                 .role(UserRole.DRIVER)
-                .emailVerified(true)
+                .emailVerified(false) // Will be set to true when they set up password
                 .isActive(true)
                 .build();
 
@@ -63,7 +70,24 @@ public class AdminDriverService {
                 .active(true)
                 .build();
 
-        return driverProfileRepository.save(profile);
+        DriverProfile savedProfile = driverProfileRepository.save(profile);
+
+        // Create setup token and send email invite
+        UserToken setupToken = tokenService.createAccountSetupToken(savedUser);
+        String link = "http://localhost:4200/setup-account?token=" + setupToken.getToken();
+
+        emailService.sendEmail(
+                savedUser.getEmail(),
+                "Set Up Your Driver Account",
+                "Hello " + savedUser.getName() + ",\n\n" +
+                        "You have been added as a Driver in the Car Rental system.\n" +
+                        "Please click the link below to set up your password and activate your account:\n" +
+                        link + "\n\n" +
+                        "This link will expire in 24 hours.\n\n" +
+                        "Best regards,\nCar Rental Team"
+        );
+
+        return savedProfile;
     }
 
     public List<DriverProfile> getAllDrivers() {        // 👈 FIXED

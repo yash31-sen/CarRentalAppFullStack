@@ -2,13 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AppUser, DriverProfile, ServiceCity, CarPricing } from '../models';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SuperAdminService {
 
-  baseUrl = 'http://localhost:8080/super-admin';
+  baseUrl = `${environment.apiUrl}/super-admin`;
 
   constructor(private http: HttpClient) {}
 

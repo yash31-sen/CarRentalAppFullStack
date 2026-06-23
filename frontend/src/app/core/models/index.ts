@@ -4,6 +4,7 @@ export interface AppUser {
   email: string;
   role: 'USER' | 'ADMIN' | 'SUPER_ADMIN' | 'DRIVER';
   active: boolean;
+  emailVerified: boolean;
   city?: string;
 }
 

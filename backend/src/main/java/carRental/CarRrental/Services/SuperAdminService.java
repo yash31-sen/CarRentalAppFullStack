@@ -26,8 +26,10 @@ public class SuperAdminService {
     private final UserTokenRepository userTokenRepository;
     private final DriverProfileRepository driverProfileRepository;
     private final CarRepository carRepository;
+    private final BookingRepository bookingRepository;
+    private final TokenService tokenService;
+    private final EmailService emailService;
 
-private   final   BookingRepository bookingRepository;
     // ✅ 1. Create Admin
     public boolean createAdmin(CreateAdminRequest req) {
 
@@ -44,17 +46,37 @@ private   final   BookingRepository bookingRepository;
             );
         }
 
+        String rawPassword = (req.getPassword() != null && !req.getPassword().isBlank())
+                ? req.getPassword()
+                : java.util.UUID.randomUUID().toString();
+
         AppUser admin = AppUser.builder()
                 .name(req.getName())
                 .email(email)
-                .passwordHash(passwordEncoder.encode(req.getPassword()))
+                .passwordHash(passwordEncoder.encode(rawPassword))
                 .role(UserRole.ADMIN)
-                .emailVerified(true)
+                .emailVerified(false) // Will be set to true when they set up password
                 .isActive(true)
                 .city(req.getCity().trim())
                 .build();
 
-        appUserRepository.save(admin);
+        AppUser savedAdmin = appUserRepository.save(admin);
+
+        // Create setup token and send email invite
+        UserToken setupToken = tokenService.createAccountSetupToken(savedAdmin);
+        String link = "http://localhost:4200/setup-account?token=" + setupToken.getToken();
+
+        emailService.sendEmail(
+                savedAdmin.getEmail(),
+                "Set Up Your Admin Account",
+                "Hello " + savedAdmin.getName() + ",\n\n" +
+                        "You have been added as an Admin in the Car Rental system.\n" +
+                        "Please click the link below to set up your password and activate your account:\n" +
+                        link + "\n\n" +
+                        "This link will expire in 24 hours.\n\n" +
+                        "Best regards,\nCar Rental Team"
+        );
+
         return true;
     }
 
@@ -350,7 +372,22 @@ private   final   BookingRepository bookingRepository;
                 .admin(admin)
                 .build();
 
-        return serviceCityRepository.save(city);
+        ServiceCity savedCity = serviceCityRepository.save(city);
+
+        if (admin != null) {
+            emailService.sendEmail(
+                    admin.getEmail(),
+                    "City Management Assignment",
+                    "Hello " + admin.getName() + ",\n\n" +
+                            "A new service city has been created and you have been assigned to manage it:\n" +
+                            "City: " + savedCity.getCityName() + "\n" +
+                            "Parking Address: " + savedCity.getParkingAddress() + "\n" +
+                            "Parking Contact: " + savedCity.getParkingContact() + "\n\n" +
+                            "Best regards,\nCar Rental Team"
+            );
+        }
+
+        return savedCity;
     }
 
     // ✅ 14. Get All Cities
@@ -431,7 +468,19 @@ private   final   BookingRepository bookingRepository;
         }
 
         city.setAdmin(admin);
-        return serviceCityRepository.save(city);
+        ServiceCity savedCity = serviceCityRepository.save(city);
+
+        emailService.sendEmail(
+                admin.getEmail(),
+                "City Management Assignment",
+                "Hello " + admin.getName() + ",\n\n" +
+                        "You have been assigned to manage the city: " + savedCity.getCityName() + ".\n" +
+                        "Parking Address: " + savedCity.getParkingAddress() + "\n" +
+                        "Parking Contact: " + savedCity.getParkingContact() + "\n\n" +
+                        "Best regards,\nCar Rental Team"
+        );
+
+        return savedCity;
     }
 
     // ✅ 19. Update One Way Fee

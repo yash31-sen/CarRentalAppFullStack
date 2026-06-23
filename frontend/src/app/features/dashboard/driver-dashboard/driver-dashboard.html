@@ -69,12 +69,12 @@
                 (click)="updateStatus('AVAILABLE')" class="status-btn available">
           Available
         </button>
-        <button [class.active]="profile.status === 'BUSY'" 
-                (click)="updateStatus('BUSY')" class="status-btn busy">
+        <button [class.active]="profile.status === 'ON_TRIP'" 
+                (click)="updateStatus('ON_TRIP')" class="status-btn busy">
           Busy
         </button>
-        <button [class.active]="profile.status === 'OFFLINE'" 
-                (click)="updateStatus('OFFLINE')" class="status-btn offline">
+        <button [class.active]="profile.status === 'INACTIVE'" 
+                (click)="updateStatus('INACTIVE')" class="status-btn offline">
           Offline
         </button>
       </div>

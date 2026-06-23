@@ -75,6 +75,7 @@
         <th>Name</th>
         <th>Email</th>
         <th>License</th>
+        <th>Activation</th>
         <th>Status</th>
         <th>Actions</th>
 
@@ -93,6 +94,14 @@
         <td>{{ driver.user.email }}</td>
 
         <td>{{ driver.licenseNumber }}</td>
+
+        <td>
+          <span
+            class="status"
+            [ngClass]="driver.user.emailVerified ? 'active' : 'pending'">
+            {{ driver.user.emailVerified ? 'ACTIVATED' : 'PENDING SETUP' }}
+          </span>
+        </td>
 
         <td>
 

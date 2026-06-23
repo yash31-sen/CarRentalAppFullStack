@@ -292,6 +292,12 @@ tr:hover {
   border: 1px solid rgba(244, 63, 94, 0.2);
 }
 
+.status.pending {
+  background-color: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
 /* Authentication Layout */
 .auth-container {
   height: calc(100vh - 70px);

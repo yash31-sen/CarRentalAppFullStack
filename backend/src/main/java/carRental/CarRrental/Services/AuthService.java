@@ -236,7 +236,7 @@ public class AuthService {
         // IMPORTANT: response generic to prevent user enumeration
         userRepository.findByEmail(email).ifPresent(user -> {
             var resetToken = tokenService.createPasswordResetToken(user);
-            String link = "http://localhost:8080/auth/reset-password?token=" + resetToken.getToken();
+            String link = "http://localhost:4200/reset-password?token=" + resetToken.getToken();
             emailService.sendEmail(
                     user.getEmail(),
                     "Reset your password",
@@ -244,16 +244,39 @@ public class AuthService {
             );
         });
     }
-// ...
+
     public void resetPassword(ResetPasswordRequest req) {
         UserToken t = tokenRepository
                 .findByTokenAndType(req.getToken(), TokenType.RESET_PASSWORD)
-                .orElseThrow(() -> new RuntimeException("Invalid token"));
-        if (t.isUsed()) throw new RuntimeException("Token already used");
-        if (t.isExpired()) throw new RuntimeException("Token expired");
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid token"));
+        if (t.isUsed()) throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "Token already used");
+        if (t.isExpired()) throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "Token expired");
         AppUser user = t.getUser();
         user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
         userRepository.save(user);
+        t.setUsedAt(Instant.now());
+        tokenRepository.save(t);
+    }
+
+    public void setupAccount(ResetPasswordRequest req) {
+        UserToken t = tokenRepository
+                .findByTokenAndType(req.getToken(), TokenType.ACCOUNT_SETUP)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid token"));
+        if (t.isUsed()) throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "Token already used");
+        if (t.isExpired()) throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "Token expired");
+        
+        AppUser user = t.getUser();
+        user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
+        user.setEmailVerified(true);
+        user.setActive(true);
+        userRepository.save(user);
+        
         t.setUsedAt(Instant.now());
         tokenRepository.save(t);
     }

@@ -22,7 +22,8 @@ public class BookingService {
     private final AppUserRepository userRepository;
     private final DriverProfileRepository driverProfileRepository;
     private final ServiceCityRepository serviceCityRepository;
-    private final CarPricingRepository carPricingRepository;  // 👈 ADDED
+    private final CarPricingRepository carPricingRepository;
+    private final EmailService emailService;
 
     // =============================================
     // 1. CREATE BOOKING
@@ -195,6 +196,22 @@ public class BookingService {
             b.setStatus(BookingStatus.CONFIRMED);
             driver.setStatus(DriverStatus.ON_TRIP);
             driverProfileRepository.save(driver);
+
+            if (driver.getUser() != null) {
+                emailService.sendEmail(
+                        driver.getUser().getEmail(),
+                        "New Booking Assignment",
+                        "Hello " + driver.getUser().getName() + ",\n\n" +
+                                "You have been assigned to Booking #" + b.getId() + ".\n" +
+                                "Trip Details:\n" +
+                                "- Pickup City: " + b.getPickupCity() + "\n" +
+                                "- Drop City: " + b.getDropCity() + "\n" +
+                                "- Start Date: " + b.getStartDate() + "\n" +
+                                "- End Date: " + b.getEndDate() + "\n\n" +
+                                "Please log in to your dashboard to view more details.\n\n" +
+                                "Best regards,\nCar Rental Team"
+                );
+            }
         } else {
             b.setStatus(BookingStatus.DRIVER_ASSIGNMENT_PENDING);
         }
@@ -299,9 +316,22 @@ public class BookingService {
                     .findByCityName(b.getDropCity())
                     .orElse(null);
             if (dropCity != null) {
-                car.setCurrentAdmin(dropCity.getAdmin());
+                AppUser dropCityAdmin = dropCity.getAdmin();
+                car.setCurrentAdmin(dropCityAdmin);
                 car.setCurrentLocation(
                         dropCity.getParkingAddress());
+                
+                if (dropCityAdmin != null) {
+                    emailService.sendEmail(
+                            dropCityAdmin.getEmail(),
+                            "Car Repositioned to Your City Inventory",
+                            "Hello " + dropCityAdmin.getName() + ",\n\n" +
+                                    "A car from a completed ONE-WAY trip has been repositioned to your city's inventory:\n" +
+                                    "Car: " + car.getBrand() + " " + car.getModel() + " (Number: " + car.getCarNumber() + ")\n" +
+                                    "Location: " + dropCity.getParkingAddress() + "\n\n" +
+                                    "Best regards,\nCar Rental Team"
+                    );
+                }
             }
         }
 
@@ -362,6 +392,16 @@ public class BookingService {
             DriverProfile driver = b.getDriverProfile();
             driver.setStatus(DriverStatus.AVAILABLE);
             driverProfileRepository.save(driver);
+
+            if (driver.getUser() != null) {
+                emailService.sendEmail(
+                        driver.getUser().getEmail(),
+                        "Booking Cancellation Notice",
+                        "Hello " + driver.getUser().getName() + ",\n\n" +
+                                "Please note that Booking #" + b.getId() + " has been cancelled, and your availability status has been reset to AVAILABLE.\n\n" +
+                                "Best regards,\nCar Rental Team"
+                );
+            }
         }
 
         Car car = b.getCar();

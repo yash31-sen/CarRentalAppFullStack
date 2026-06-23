@@ -1,0 +1,39 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <h2>Account Activation</h2>
+    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">
+      Welcome! Please set a password below to activate your account.
+    </p>
+
+    <div *ngIf="!token" class="error" style="margin-bottom: 20px;">
+      ⚠️ Missing setup token. Please check the link in your invitation email.
+    </div>
+
+    <form *ngIf="token" [formGroup]="setupForm" (ngSubmit)="submit()">
+      <div class="form-group">
+        <input type="password" formControlName="password" placeholder="Password" />
+        <div *ngIf="setupForm.get('password').touched && setupForm.get('password').invalid" class="error" style="text-align: left; font-size: 12px; margin-top: 5px;">
+          Password must be at least 6 characters long.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <input type="password" formControlName="confirmPassword" placeholder="Confirm Password" />
+        <div *ngIf="setupForm.get('confirmPassword').touched && setupForm.hasError('mismatch')" class="error" style="text-align: left; font-size: 12px; margin-top: 5px;">
+          Passwords do not match.
+        </div>
+      </div>
+
+      <button type="submit" [disabled]="setupForm.invalid || loading">
+        {{ loading ? 'Activating account...' : 'Set Password & Activate' }}
+      </button>
+    </form>
+
+    <!-- Error Messages -->
+    <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <div class="auth-helper">
+      Back to <a routerLink="/login">Login</a>
+    </div>
+  </div>
+</div>

@@ -138,13 +138,13 @@
   border-color: rgba(16, 185, 129, 0.2);
 }
 
-.badge-status.BUSY {
+.badge-status.BUSY, .badge-status.ON_TRIP {
   background: var(--warning-light);
   color: var(--warning);
   border-color: rgba(245, 158, 11, 0.2);
 }
 
-.badge-status.OFFLINE {
+.badge-status.OFFLINE, .badge-status.INACTIVE {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-muted);
 }

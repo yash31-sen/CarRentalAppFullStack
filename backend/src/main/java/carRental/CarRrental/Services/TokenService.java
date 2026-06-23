@@ -29,6 +29,11 @@ public class TokenService {
         return createToken(user, TokenType.RESET_PASSWORD, Duration.ofMinutes(15));
     }
 
+    // Account setup token (24 hours expiry)
+    public UserToken createAccountSetupToken(AppUser user) {
+        return createToken(user, TokenType.ACCOUNT_SETUP, Duration.ofHours(24));
+    }
+
     // Refresh token (long expiry)
     public UserToken createRefreshToken(AppUser user) {
         return createToken(user, TokenType.REFRESH_TOKEN, Duration.ofDays(7));

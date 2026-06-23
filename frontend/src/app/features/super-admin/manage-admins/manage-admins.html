@@ -116,6 +116,7 @@
         <th>Name</th>
         <th>Email</th>
         <th>City</th>
+        <th>Activation</th>
         <th>Status</th>
         <th>Actions</th>
 
@@ -134,6 +135,14 @@
         <td>{{ admin.email }}</td>
 
         <td>{{ admin.city }}</td>
+
+        <td>
+          <span
+            class="status"
+            [ngClass]="admin.emailVerified ? 'active' : 'pending'">
+            {{ admin.emailVerified ? 'ACTIVATED' : 'PENDING SETUP' }}
+          </span>
+        </td>
 
         <td>
 
