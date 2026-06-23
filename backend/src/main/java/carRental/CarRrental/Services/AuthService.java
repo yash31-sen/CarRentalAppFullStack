@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import carRental.CarRrental.Models.TokenType;
 import carRental.CarRrental.Models.UserRole;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -30,6 +31,9 @@ public class AuthService {
     private final TokenService tokenService;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     public AuthService(
             AppUserRepository userRepository,
@@ -69,7 +73,7 @@ public class AuthService {
 
         UserToken verifyToken = tokenService.createEmailVerificationToken(savedUser);
 
-        String link = "http://localhost:4200/verify?token=" + verifyToken.getToken();
+        String link = frontendUrl + "/verify?token=" + verifyToken.getToken();
 
         emailService.sendEmail(
                 savedUser.getEmail(),
@@ -236,7 +240,7 @@ public class AuthService {
         // IMPORTANT: response generic to prevent user enumeration
         userRepository.findByEmail(email).ifPresent(user -> {
             var resetToken = tokenService.createPasswordResetToken(user);
-            String link = "http://localhost:4200/reset-password?token=" + resetToken.getToken();
+            String link = frontendUrl + "/reset-password?token=" + resetToken.getToken();
             emailService.sendEmail(
                     user.getEmail(),
                     "Reset your password",

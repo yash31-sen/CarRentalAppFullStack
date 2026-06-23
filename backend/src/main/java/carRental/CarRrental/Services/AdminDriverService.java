@@ -15,11 +15,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AdminDriverService {
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     private final AppUserRepository userRepository;
     private final DriverProfileRepository driverProfileRepository;
@@ -74,7 +78,7 @@ public class AdminDriverService {
 
         // Create setup token and send email invite
         UserToken setupToken = tokenService.createAccountSetupToken(savedUser);
-        String link = "http://localhost:4200/setup-account?token=" + setupToken.getToken();
+        String link = frontendUrl + "/setup-account?token=" + setupToken.getToken();
 
         emailService.sendEmail(
                 savedUser.getEmail(),

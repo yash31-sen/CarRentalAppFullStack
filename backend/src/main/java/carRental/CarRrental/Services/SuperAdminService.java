@@ -13,11 +13,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 
+import org.springframework.beans.factory.annotation.Value;
+
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class SuperAdminService {
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
+
     // add this dependency at top
     private final CarPricingRepository carPricingRepository;
     private final ServiceCityRepository serviceCityRepository;
@@ -64,7 +69,7 @@ public class SuperAdminService {
 
         // Create setup token and send email invite
         UserToken setupToken = tokenService.createAccountSetupToken(savedAdmin);
-        String link = "http://localhost:4200/setup-account?token=" + setupToken.getToken();
+        String link = frontendUrl + "/setup-account?token=" + setupToken.getToken();
 
         emailService.sendEmail(
                 savedAdmin.getEmail(),
