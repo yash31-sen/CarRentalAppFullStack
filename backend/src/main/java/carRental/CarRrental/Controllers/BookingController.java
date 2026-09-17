@@ -7,6 +7,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import carRental.CarRrental.Dtos.PaymentSuccessRequest;
+import java.util.List;
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {
@@ -34,6 +35,20 @@ public class BookingController {
                                   @RequestBody PaymentSuccessRequest req) {
         String email = authentication.getName();
         return bookingService.markPaymentSuccess(id, email, req.getPaymentRef());
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/my")
+    public List<Booking> getMyBookings(Authentication authentication) {
+        String email = authentication.getName();
+        return bookingService.getBookingsForUser(email);
+    }
+
+    @PreAuthorize("hasRole('USER')")
+    @DeleteMapping("/{id}/cancel")
+    public Booking cancelBooking(Authentication authentication, @PathVariable Long id) {
+        String email = authentication.getName();
+        return bookingService.cancelBooking(id, email);
     }
 
 }

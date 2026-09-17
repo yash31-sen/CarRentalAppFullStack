@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -484,5 +485,117 @@ public class BookingService {
         }
 
         return 0.0;
+    }
+
+    // =============================================
+    // 7. GET BOOKINGS FOR ADMIN
+    // =============================================
+    public List<Booking> getBookingsForAdmin(String adminEmail) {
+        AppUser admin = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Admin user not found"));
+
+        if (admin.getRole() == UserRole.SUPER_ADMIN) {
+            return bookingRepository.findAll();
+        }
+
+        if (admin.getRole() == UserRole.ADMIN) {
+            String city = admin.getCity();
+            if (city == null || city.isBlank()) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Admin has no assigned city");
+            }
+            return bookingRepository.findByPickupCityIgnoreCase(city);
+        }
+
+        throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN, "Access denied. Not an admin.");
+    }
+
+    // =============================================
+    // GET BOOKINGS FOR USER (self)
+    // =============================================
+    public List<Booking> getBookingsForUser(String userEmail) {
+        AppUser user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "User not found"));
+        return bookingRepository.findByUserOrderByCreatedAtDesc(user);
+    }
+
+    // =============================================
+    // 8. VERIFY DRIVING LICENSE (SELF-DRIVE)
+    // =============================================
+    public Booking verifyLicense(Long bookingId, boolean approved, String adminEmail) {
+        Booking b = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Booking not found"));
+
+        if (b.getStatus() != BookingStatus.VERIFICATION_PENDING) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Booking is not in verification pending status");
+        }
+
+        b.setLicenceVerifiedAt(Instant.now());
+        b.setLicenceVerifiedBy(adminEmail);
+
+        if (approved) {
+            b.setStatus(BookingStatus.CONFIRMED);
+        } else {
+            b.setStatus(BookingStatus.REJECTED);
+            // Since it is rejected, make the car status AVAILABLE again
+            Car car = b.getCar();
+            car.setStatus(CarStatus.AVAILABLE);
+            carRepository.save(car);
+        }
+
+        return bookingRepository.save(b);
+    }
+
+    // =============================================
+    // 9. MANUALLY ASSIGN DRIVER (WITH-DRIVER)
+    // =============================================
+    public Booking assignDriver(Long bookingId, Long driverId) {
+        Booking b = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Booking not found"));
+
+        if (b.getStatus() != BookingStatus.DRIVER_ASSIGNMENT_PENDING) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Booking is not in driver assignment pending status");
+        }
+
+        DriverProfile driver = driverProfileRepository.findById(driverId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Driver profile not found"));
+
+        if (!driver.isActive() || driver.getStatus() != DriverStatus.AVAILABLE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Driver is not available");
+        }
+
+        b.setDriverProfile(driver);
+        b.setStatus(BookingStatus.CONFIRMED);
+
+        driver.setStatus(DriverStatus.ON_TRIP);
+        driverProfileRepository.save(driver);
+
+        // Send email notice
+        if (driver.getUser() != null) {
+            emailService.sendEmail(
+                    driver.getUser().getEmail(),
+                    "New Manual Booking Assignment",
+                    "Hello " + driver.getUser().getName() + ",\n\n" +
+                            "You have been manually assigned to Booking #" + b.getId() + ".\n" +
+                            "Trip Details:\n" +
+                            "- Pickup City: " + b.getPickupCity() + "\n" +
+                            "- Drop City: " + b.getDropCity() + "\n" +
+                            "- Start Date: " + b.getStartDate() + "\n" +
+                            "- End Date: " + b.getEndDate() + "\n\n" +
+                            "Please log in to your dashboard to view more details.\n\n" +
+                            "Best regards,\nCar Rental Team"
+            );
+        }
+
+        return bookingRepository.save(b);
     }
 }

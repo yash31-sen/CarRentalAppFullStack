@@ -21,4 +21,8 @@ export class DriverService {
   updateStatus(status: string) {
     return this.http.patch(`${this.baseUrl}/status`, { status });
   }
+
+  getMyActiveBooking() {
+    return this.http.get<any>(`${this.baseUrl}/my-booking`);
+  }
 }

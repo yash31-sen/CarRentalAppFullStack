@@ -1,1 +1,408 @@
-<p>user-dashboard works!</p>
+<div class="ud-container">
+
+  <!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+  <aside class="ud-sidebar">
+
+    <div class="ud-brand">
+      <span class="brand-logo">Drive<span class="brand-accent">X</span></span>
+      <span class="brand-tagline">Your Journey Starts Here</span>
+    </div>
+
+    <div class="ud-profile-card">
+      <div class="profile-avatar">{{ userName.charAt(0).toUpperCase() }}</div>
+      <div class="profile-info">
+        <span class="profile-name">{{ userName }}</span>
+        <span class="profile-email">{{ userEmail }}</span>
+        <span class="profile-role">Customer</span>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="sidebar-stats">
+      <div class="ss-item">
+        <span class="ss-value">{{ activeBookingsCount }}</span>
+        <span class="ss-label">Active</span>
+      </div>
+      <div class="ss-divider"></div>
+      <div class="ss-item">
+        <span class="ss-value">{{ completedCount }}</span>
+        <span class="ss-label">Completed</span>
+      </div>
+      <div class="ss-divider"></div>
+      <div class="ss-item">
+        <span class="ss-value">₹{{ totalSpent | number:'1.0-0' }}</span>
+        <span class="ss-label">Spent</span>
+      </div>
+    </div>
+
+    <nav class="ud-nav">
+      <button class="ud-nav-item" [class.active]="activeTab === 'browse'" (click)="activeTab = 'browse'; loadCars()">
+        🚗 <span>Browse Cars</span>
+      </button>
+      <button class="ud-nav-item" [class.active]="activeTab === 'bookings'" (click)="activeTab = 'bookings'; loadMyBookings()">
+        📋 <span>My Bookings</span>
+        <span class="nav-badge" *ngIf="activeBookingsCount > 0">{{ activeBookingsCount }}</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="logout-btn" (click)="logout()">🚪 Logout</button>
+    </div>
+
+  </aside>
+
+  <!-- ═══════════════════════════ MAIN ═══════════════════════════════ -->
+  <main class="ud-main">
+
+    <!-- ─── BROWSE CARS ─────────────────────────────────── -->
+    <section *ngIf="activeTab === 'browse'">
+
+      <div class="ud-page-header">
+        <div>
+          <h1>Find Your Perfect Ride</h1>
+          <p class="header-sub">Browse our fleet of premium vehicles</p>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="car-filters">
+        <div class="filter-group">
+          <label>📍 City</label>
+          <select [(ngModel)]="cityFilter" (ngModelChange)="loadCars()">
+            <option value="">All Cities</option>
+            <option *ngFor="let c of cities" [value]="c.cityName">{{ c.cityName }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>🚗 Class</label>
+          <select [(ngModel)]="classFilter" (ngModelChange)="carPage = 0">
+            <option value="">All Classes</option>
+            <option *ngFor="let cls of carClasses" [value]="cls">{{ cls }}</option>
+          </select>
+        </div>
+        <div class="filter-results">
+          <span *ngIf="!loadingCars">{{ filteredCars.length }} car{{ filteredCars.length !== 1 ? 's' : '' }} found</span>
+          <span *ngIf="loadingCars" class="loading-text">Searching...</span>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="loadingCars">
+        <div class="spinner"></div>
+        <p>Loading available cars...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="!loadingCars && filteredCars.length === 0">
+        <span class="empty-icon">🔍</span>
+        <h3>No Cars Available</h3>
+        <p>Try a different city or adjust your filters.</p>
+      </div>
+
+      <!-- Cars Grid -->
+      <div class="cars-grid" *ngIf="!loadingCars && filteredCars.length > 0">
+        <div class="car-card" *ngFor="let car of pagedCars; trackBy: trackById">
+
+          <div class="car-card-header">
+            <div class="car-class-badge">{{ getClassEmoji(car.carClass) }} {{ car.carClass }}</div>
+            <div class="car-price">₹{{ car.pricePerDay }}<span class="per-day">/day</span></div>
+          </div>
+
+          <div class="car-visual">
+            <div class="car-icon-large">{{ getClassEmoji(car.carClass) }}</div>
+          </div>
+
+          <div class="car-info">
+            <h3 class="car-name">{{ car.brand }} {{ car.model }}</h3>
+            <p class="car-plate">{{ car.carNumber }}</p>
+          </div>
+
+          <div class="car-specs">
+            <span class="spec-tag fuel">⛽ {{ car.fuelType }}</span>
+            <span class="spec-tag trans">⚙️ {{ car.transmission }}</span>
+            <span class="spec-tag city">📍 {{ car.currentCity }}</span>
+          </div>
+
+          <button class="book-btn" (click)="openBookingModal(car)">
+            Book Now →
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Cars Pagination -->
+      <div class="pagination-bar" *ngIf="!loadingCars && filteredCars.length > carPageSize">
+        <div class="pagination-info">
+          Showing <strong>{{ carPage * carPageSize + 1 }}–{{ (carPage + 1) * carPageSize < filteredCars.length ? (carPage + 1) * carPageSize : filteredCars.length }}</strong>
+          of <strong>{{ filteredCars.length }}</strong> cars
+        </div>
+        <div class="pagination-controls">
+          <button class="page-btn" (click)="carPage = carPage - 1" [disabled]="carPage === 0">‹</button>
+          <ng-container *ngFor="let p of getPages(carTotalPages)">
+            <button class="page-btn" [class.active]="p === carPage" (click)="carPage = p"
+              *ngIf="p === 0 || p === carTotalPages - 1 || (p >= carPage - 1 && p <= carPage + 1)">
+              {{ p + 1 }}
+            </button>
+          </ng-container>
+          <button class="page-btn" (click)="carPage = carPage + 1" [disabled]="carPage === carTotalPages - 1">›</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ─── MY BOOKINGS ─────────────────────────────────── -->
+    <section *ngIf="activeTab === 'bookings'">
+
+      <div class="ud-page-header">
+        <div>
+          <h1>My Bookings</h1>
+          <p class="header-sub">Track and manage all your trips</p>
+        </div>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="booking-filters">
+        <button class="filter-pill" [class.active]="bookingStatusFilter === ''" (click)="bookingStatusFilter = ''; bkPage = 0">
+          All <span class="pill-count">{{ myBookings.length }}</span>
+        </button>
+        <button class="filter-pill active-trip" [class.active]="bookingStatusFilter === 'CONFIRMED'" (click)="bookingStatusFilter = 'CONFIRMED'; bkPage = 0">
+          ✅ Confirmed
+        </button>
+        <button class="filter-pill in-progress" [class.active]="bookingStatusFilter === 'IN_PROGRESS'" (click)="bookingStatusFilter = 'IN_PROGRESS'; bkPage = 0">
+          🚗 In Progress
+        </button>
+        <button class="filter-pill" [class.active]="bookingStatusFilter === 'COMPLETED'" (click)="bookingStatusFilter = 'COMPLETED'; bkPage = 0">
+          🏁 Completed
+        </button>
+        <button class="filter-pill" [class.active]="bookingStatusFilter === 'CANCELLED'" (click)="bookingStatusFilter = 'CANCELLED'; bkPage = 0">
+          ❌ Cancelled
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="loadingBookings">
+        <div class="spinner"></div>
+        <p>Loading your bookings...</p>
+      </div>
+
+      <!-- Empty -->
+      <div class="empty-state" *ngIf="!loadingBookings && filteredBookings.length === 0">
+        <span class="empty-icon">📋</span>
+        <h3>No Bookings Yet</h3>
+        <p>Browse our fleet and book your first ride!</p>
+        <button class="btn-primary-action" (click)="activeTab = 'browse'">Browse Cars →</button>
+      </div>
+
+      <!-- Bookings List -->
+      <div class="bookings-list" *ngIf="!loadingBookings && filteredBookings.length > 0">
+        <div class="booking-card" *ngFor="let b of pagedBookings; trackBy: trackById">
+
+          <div class="booking-card-left">
+            <div class="booking-car-icon">{{ getClassEmoji(b.car?.carClass || '') }}</div>
+          </div>
+
+          <div class="booking-card-body">
+            <div class="booking-top">
+              <div>
+                <h3 class="booking-car-name">{{ b.car?.brand }} {{ b.car?.model }}</h3>
+                <p class="booking-plate">{{ b.car?.carNumber }}</p>
+              </div>
+              <span class="booking-status-badge" [class]="getStatusColor(b.status)">
+                {{ b.status.replace('_', ' ') }}
+              </span>
+            </div>
+
+            <div class="booking-details-row">
+              <div class="booking-detail">
+                <span class="detail-label">📅 Dates</span>
+                <span class="detail-value">{{ b.startDate }} → {{ b.endDate }}</span>
+              </div>
+              <div class="booking-detail">
+                <span class="detail-label">📍 Route</span>
+                <span class="detail-value">{{ b.pickupCity }} → {{ b.dropCity }}</span>
+              </div>
+              <div class="booking-detail">
+                <span class="detail-label">🚗 Type</span>
+                <span class="detail-value">{{ b.bookingType?.replace('_', ' ') }}</span>
+              </div>
+              <div class="booking-detail">
+                <span class="detail-label">💰 Amount</span>
+                <span class="detail-value price">₹{{ b.finalPrice || b.totalPrice | number:'1.0-0' }}</span>
+              </div>
+            </div>
+
+            <div class="booking-footer">
+              <span class="booking-id">#{{ b.id }}</span>
+
+              <!-- Status Messages -->
+              <span class="status-note warning" *ngIf="b.status === 'PENDING_PAYMENT'">
+                ⏳ Awaiting payment
+              </span>
+              <span class="status-note info" *ngIf="b.status === 'VERIFICATION_PENDING'">
+                🔍 License under review
+              </span>
+              <span class="status-note info" *ngIf="b.status === 'DRIVER_ASSIGNMENT_PENDING'">
+                👤 Driver being assigned
+              </span>
+              <span class="status-note success" *ngIf="b.status === 'CONFIRMED'">
+                ✅ Ready for your trip!
+              </span>
+              <span class="status-note purple" *ngIf="b.status === 'IN_PROGRESS'">
+                🚗 Trip in progress
+              </span>
+
+              <button class="cancel-btn" *ngIf="isCancellable(b)" (click)="openCancelConfirm(b.id)">
+                Cancel Booking
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bookings Pagination -->
+      <div class="pagination-bar" *ngIf="!loadingBookings && filteredBookings.length > bkPageSize">
+        <div class="pagination-info">
+          Showing <strong>{{ bkPage * bkPageSize + 1 }}–{{ (bkPage + 1) * bkPageSize < filteredBookings.length ? (bkPage + 1) * bkPageSize : filteredBookings.length }}</strong>
+          of <strong>{{ filteredBookings.length }}</strong> bookings
+        </div>
+        <div class="pagination-controls">
+          <button class="page-btn" (click)="bkPage = bkPage - 1" [disabled]="bkPage === 0">‹</button>
+          <ng-container *ngFor="let p of getPages(bkTotalPages)">
+            <button class="page-btn" [class.active]="p === bkPage" (click)="bkPage = p"
+              *ngIf="p === 0 || p === bkTotalPages - 1 || (p >= bkPage - 1 && p <= bkPage + 1)">
+              {{ p + 1 }}
+            </button>
+          </ng-container>
+          <button class="page-btn" (click)="bkPage = bkPage + 1" [disabled]="bkPage === bkTotalPages - 1">›</button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<!-- ═══════════════ BOOKING MODAL ═══════════════ -->
+<div class="modal-overlay" *ngIf="showBookingModal" (click)="closeBookingModal()">
+  <div class="modal ud-modal" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div>
+        <h2>Book {{ selectedCar?.brand }} {{ selectedCar?.model }}</h2>
+        <p class="modal-subtitle">{{ selectedCar?.carNumber }} · {{ selectedCar?.carClass }}</p>
+      </div>
+      <button class="close-btn" (click)="closeBookingModal()">✕</button>
+    </div>
+
+    <div class="modal-form">
+
+      <!-- Booking Type -->
+      <div class="booking-type-toggle">
+        <button class="type-btn" [class.active]="bookingForm.bookingType === 'SELF_DRIVE'"
+          (click)="bookingForm.bookingType = 'SELF_DRIVE'">
+          🚗 Self Drive
+        </button>
+        <button class="type-btn" [class.active]="bookingForm.bookingType === 'WITH_DRIVER'"
+          (click)="bookingForm.bookingType = 'WITH_DRIVER'">
+          👤 With Driver
+        </button>
+      </div>
+
+      <!-- Trip Type -->
+      <div class="trip-type-toggle">
+        <button class="trip-btn" [class.active]="bookingForm.tripType === 'ROUND_TRIP'"
+          (click)="bookingForm.tripType = 'ROUND_TRIP'; onTripTypeChange()">
+          🔄 Round Trip
+        </button>
+        <button class="trip-btn" [class.active]="bookingForm.tripType === 'ONE_WAY'"
+          (click)="bookingForm.tripType = 'ONE_WAY'; onTripTypeChange()">
+          ➡️ One Way
+        </button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="bookingForm.startDate" [min]="today" />
+        </div>
+        <div class="form-group">
+          <label>End Date</label>
+          <input type="date" [(ngModel)]="bookingForm.endDate" [min]="bookingForm.startDate || today" />
+        </div>
+        <div class="form-group">
+          <label>Pickup City</label>
+          <select [(ngModel)]="bookingForm.pickupCity">
+            <option value="">Select city</option>
+            <option *ngFor="let c of cities" [value]="c.cityName">{{ c.cityName }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Drop City</label>
+          <select [(ngModel)]="bookingForm.dropCity" [disabled]="bookingForm.tripType === 'ROUND_TRIP'">
+            <option value="">Select city</option>
+            <option *ngFor="let c of cities" [value]="c.cityName">{{ c.cityName }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Pickup Location</label>
+          <input type="text" [(ngModel)]="bookingForm.pickupLocation" placeholder="e.g. Airport Gate 3" />
+        </div>
+        <div class="form-group">
+          <label>Drop Location</label>
+          <input type="text" [(ngModel)]="bookingForm.dropLocation" placeholder="e.g. City Centre Mall" />
+        </div>
+        <div class="form-group span-full" *ngIf="bookingForm.bookingType === 'SELF_DRIVE'">
+          <label>Driving License Number <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="bookingForm.drivingLicenseNumber" placeholder="e.g. MH12-2023-12345" />
+        </div>
+      </div>
+
+      <!-- Price Summary -->
+      <div class="price-summary" *ngIf="estimatedDays > 0">
+        <div class="ps-row">
+          <span>{{ selectedCar?.pricePerDay | number:'1.0-0' }} × {{ estimatedDays }} day{{ estimatedDays !== 1 ? 's' : '' }}</span>
+          <span>₹{{ estimatedPrice | number:'1.0-0' }}</span>
+        </div>
+        <div class="ps-row total">
+          <strong>Estimated Total</strong>
+          <strong>₹{{ estimatedPrice | number:'1.0-0' }}</strong>
+        </div>
+        <p class="ps-note">Final price may vary based on actual km driven (extra km charges may apply).</p>
+      </div>
+
+      <div class="form-error" *ngIf="bookingError">⚠️ {{ bookingError }}</div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="closeBookingModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="submitBooking()" [disabled]="bookingLoading">
+          {{ bookingLoading ? 'Processing...' : '🚗 Confirm & Pay' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ CANCEL CONFIRM ═══════════════ -->
+<div class="modal-overlay" *ngIf="showCancelConfirm" (click)="closeCancelConfirm()">
+  <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Cancel Booking</h2>
+      <button class="close-btn" (click)="closeCancelConfirm()">✕</button>
+    </div>
+    <div class="cancel-body">
+      <p>Are you sure you want to cancel this booking? Refund eligibility depends on how close to the trip date you cancel.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="closeCancelConfirm()">Keep Booking</button>
+      <button class="btn btn-danger" (click)="doCancel()">Yes, Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TOAST ═══════════════ -->
+<div class="ud-toast" [class.visible]="toastVisible" [class]="toastType">
+  <span>{{ toastMsg }}</span>
+</div>

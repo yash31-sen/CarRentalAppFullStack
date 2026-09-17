@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 
@@ -36,6 +37,7 @@ public class SuperAdminService {
     private final EmailService emailService;
 
     // ✅ 1. Create Admin
+    @Transactional
     public boolean createAdmin(CreateAdminRequest req) {
 
         String email = req.getEmail().trim().toLowerCase();
@@ -241,6 +243,72 @@ public class SuperAdminService {
 
         userTokenRepository.deleteByUser(user);
         appUserRepository.delete(user);
+    }
+
+    // ✅ 9b. Delete ALL Users (role=USER only)
+    @Transactional
+    public int deleteAllUsers() {
+        List<AppUser> users = appUserRepository.findByRole(UserRole.USER);
+        for (AppUser user : users) {
+            bookingRepository.deleteByUser(user);
+            driverProfileRepository.deleteByUser(user);
+            userTokenRepository.deleteByUser(user);
+        }
+        appUserRepository.deleteAll(users);
+        return users.size();
+    }
+
+    // ✅ 9c. Delete ALL Admins (role=ADMIN only)
+    @Transactional
+    public int deleteAllAdmins() {
+        List<AppUser> admins = appUserRepository.findByRole(UserRole.ADMIN);
+        for (AppUser admin : admins) {
+            // Nullify admin in cities
+            List<ServiceCity> cities = serviceCityRepository.findAll();
+            for(ServiceCity city : cities) {
+                if (city.getAdmin() != null && city.getAdmin().getId().equals(admin.getId())) {
+                    city.setAdmin(null);
+                    serviceCityRepository.save(city);
+                }
+            }
+            // Bookings and Cars might have admin assignment. Nullify them.
+            List<Car> cars = carRepository.findByCurrentAdmin_Id(admin.getId());
+            for(Car car : cars) {
+                car.setCurrentAdmin(null);
+                carRepository.save(car);
+            }
+            List<Booking> bookings = bookingRepository.findByAssignedAdminId(admin.getId());
+            for(Booking b : bookings) {
+                b.setAssignedAdminId(null);
+                bookingRepository.save(b);
+            }
+            userTokenRepository.deleteByUser(admin);
+        }
+        appUserRepository.deleteAll(admins);
+        return admins.size();
+    }
+
+    // ✅ 9d. Delete ALL Drivers (role=DRIVER only)
+    @Transactional
+    public int deleteAllDrivers() {
+        List<AppUser> drivers = appUserRepository.findByRole(UserRole.DRIVER);
+        for (AppUser driver : drivers) {
+            // For driver profile
+            driverProfileRepository.findByUser(driver).ifPresent(dp -> {
+                // Bookings might have this driverProfileId. We need to set it to null.
+                List<Booking> bookings = bookingRepository.findAll(); // Simple approach, since we don't have findByDriverProfileId
+                for(Booking b : bookings) {
+                    if(b.getDriverProfile() != null && b.getDriverProfile().getId().equals(dp.getId())) {
+                        b.setDriverProfile(null);
+                        bookingRepository.save(b);
+                    }
+                }
+            });
+            driverProfileRepository.deleteByUser(driver);
+            userTokenRepository.deleteByUser(driver);
+        }
+        appUserRepository.deleteAll(drivers);
+        return drivers.size();
     }
 
     // ✅ 10. Get All Drivers

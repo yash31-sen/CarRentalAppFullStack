@@ -45,6 +45,17 @@ export class ManagePricing implements OnInit {
     });
   }
 
+  // Pagination
+  currentPage = 0;
+  pageSize = 10;
+  get totalPages() { return Math.ceil(this.filteredPricing.length / this.pageSize); }
+  get pagedPricing() {
+    const start = this.currentPage * this.pageSize;
+    return this.filteredPricing.slice(start, start + this.pageSize);
+  }
+  getPages(total: number) { return Array.from({ length: total }, (_, i) => i); }
+  onFilterChange() { this.currentPage = 0; }
+
   loading = false;
   showDeletePopup = false;
 

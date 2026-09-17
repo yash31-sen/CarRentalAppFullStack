@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ public class AdminDriverService {
     private final TokenService tokenService;
     private final EmailService emailService;
 
+    @Transactional
     public DriverProfile addDriver(DriverCreateRequest req) {
 
         String email = req.getEmail().trim().toLowerCase();

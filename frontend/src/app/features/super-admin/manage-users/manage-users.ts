@@ -38,6 +38,17 @@ export class ManageUsers implements OnInit {
     });
   }
 
+  // Pagination
+  currentPage = 0;
+  pageSize = 10;
+  get totalPages() { return Math.ceil(this.filteredUsers.length / this.pageSize); }
+  get pagedUsers() {
+    const start = this.currentPage * this.pageSize;
+    return this.filteredUsers.slice(start, start + this.pageSize);
+  }
+  getPages(total: number) { return Array.from({ length: total }, (_, i) => i); }
+  onFilterChange() { this.currentPage = 0; }
+
   // POPUP
   showActionPopup = false;
 

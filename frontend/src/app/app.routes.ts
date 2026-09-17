@@ -50,7 +50,7 @@ export const routes: Routes = [
       import('./features/dashboard/admin-dashboard/admin-dashboard')
         .then(m => m.AdminDashboard),
     canActivate: [authGuard],
-    data: { roles: ['ADMIN'] }
+    data: { roles: ['ADMIN', 'SUPER_ADMIN'] }
   },
   {
     path: 'super-admin-dashboard',

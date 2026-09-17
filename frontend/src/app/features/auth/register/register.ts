@@ -22,16 +22,22 @@ export class Register implements OnInit {
   registerForm:any
  
 
+  private googleInitialized = false;
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router
   ) {
-     this.registerForm = this.fb.group({
-    name: ['', [Validators.required]],
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required]]
-  });
+    this.registerForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(/^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{8,}$/)
+      ]]
+    });
   }
 
   ngOnInit() {
@@ -39,7 +45,9 @@ export class Register implements OnInit {
   }
 
   initGoogleSignIn() {
+    if (this.googleInitialized) return;
     if (typeof google !== 'undefined') {
+      this.googleInitialized = true;
       google.accounts.id.initialize({
         client_id: environment.googleClientId,
         callback: this.handleGoogleCredential.bind(this)
@@ -103,26 +111,26 @@ register() {
   if (this.registerForm.invalid) return;
 
   this.loading = true;
+  this.errorMessage = '';
+  this.successMessage = '';
 
   this.authService.register(this.registerForm.value).subscribe({
     next: (res: any) => {
       this.loading = false;
-      this.errorMessage = '';
-      
-      // 👇 show backend message
-      this.successMessage = res.message || '📧 Check your email for verification link';
-      console.log('Registration successful:', res);
-      // optional: delay redirect
-      setTimeout(() => {
-        this.router.navigate(['/login']);
-      }, 3000);
+      this.successMessage = res.message || '📧 Check your email for a verification link';
+      setTimeout(() => this.router.navigate(['/login']), 3000);
     },
     error: (err) => {
       this.loading = false;
       this.successMessage = '';
-
-      this.errorMessage = err.error?.message || 'Registration failed';
-      console.log('Registration failed:', err);
+      // Extract the most useful message: details object, message string, or fallback
+      const body = err.error;
+      if (body?.details) {
+        this.errorMessage = Object.values(body.details).join(' · ');
+      } else {
+        this.errorMessage = body?.message || 'Registration failed. Please try again.';
+      }
+      console.error('Registration failed:', err);
     }
   });
 }

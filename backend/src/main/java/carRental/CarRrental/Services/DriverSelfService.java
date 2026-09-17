@@ -1,7 +1,10 @@
 package carRental.CarRrental.Services;
 
-import carRental.CarRrental.Dtos.ResetPasswordRequest;
+import carRental.CarRrental.Models.Booking;
+import carRental.CarRrental.Models.BookingStatus;
 import carRental.CarRrental.Models.DriverProfile;
+import carRental.CarRrental.Models.DriverStatus;
+import carRental.CarRrental.Repositories.BookingRepository;
 import carRental.CarRrental.Repositories.DriverProfileRepository;
 import org.springframework.stereotype.Service;
 
@@ -9,9 +12,12 @@ import org.springframework.stereotype.Service;
 public class DriverSelfService {
 
     private final DriverProfileRepository driverProfileRepository;
+    private final BookingRepository bookingRepository;
 
-    public DriverSelfService(DriverProfileRepository driverProfileRepository) {
+    public DriverSelfService(DriverProfileRepository driverProfileRepository,
+                             BookingRepository bookingRepository) {
         this.driverProfileRepository = driverProfileRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     public DriverProfile getMyProfile(String email) {
@@ -25,9 +31,20 @@ public class DriverSelfService {
         return driverProfileRepository.save(p);
     }
 
-    public DriverProfile updateMyStatus(String email, carRental.CarRrental.Models.DriverStatus status) {
+    public DriverProfile updateMyStatus(String email, DriverStatus status) {
         DriverProfile p = getMyProfile(email);
         p.setStatus(status);
         return driverProfileRepository.save(p);
+    }
+
+    public Booking getMyActiveBooking(String email) {
+        DriverProfile p = getMyProfile(email);
+        return bookingRepository.findAll().stream()
+                .filter(b -> b.getDriverProfile() != null
+                        && b.getDriverProfile().getId().equals(p.getId())
+                        && (b.getStatus() == BookingStatus.CONFIRMED
+                            || b.getStatus() == BookingStatus.IN_PROGRESS))
+                .findFirst()
+                .orElse(null);
     }
 }

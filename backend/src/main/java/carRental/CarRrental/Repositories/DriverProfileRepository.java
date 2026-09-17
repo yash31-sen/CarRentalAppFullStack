@@ -3,6 +3,7 @@ package carRental.CarRrental.Repositories;
 import carRental.CarRrental.Models.AppUser;
 import carRental.CarRrental.Models.DriverProfile;        // 👈 CORRECT import
 import carRental.CarRrental.Models.DriverStatus;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -21,4 +22,7 @@ public interface DriverProfileRepository
             String location,
             DriverStatus status
     );
+
+    @Transactional
+    void deleteByUser(AppUser user);
 }

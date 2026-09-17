@@ -20,6 +20,7 @@ import java.util.UUID;
 import carRental.CarRrental.Models.TokenType;
 import carRental.CarRrental.Models.UserRole;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -53,11 +54,14 @@ public class AuthService {
 
     }
 
+    @Transactional
     public void register(RegisterRequest req) {
         String email = req.getEmail().trim().toLowerCase();
 
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email already registered");
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "This email is already registered. Please login or use a different email.");
         }
 
         AppUser user = AppUser.builder()
@@ -75,10 +79,18 @@ public class AuthService {
 
         String link = frontendUrl + "/verify?token=" + verifyToken.getToken();
 
+        String emailBody = "Hello " + savedUser.getName() + ",\n\n"
+                + "Thank you for registering with Car Rental!\n\n"
+                + "Please click the link below to verify your email address:\n\n"
+                + link + "\n\n"
+                + "This link will expire in 24 hours.\n\n"
+                + "If you did not create an account, you can safely ignore this email.\n\n"
+                + "Best regards,\nCar Rental Team";
+
         emailService.sendEmail(
                 savedUser.getEmail(),
-                "Verify your email",
-                "Click to verify your account:\n" + link
+                "Verify Your Email - Car Rental",
+                emailBody
         );
     }
 
@@ -87,7 +99,7 @@ public class AuthService {
         String email = req.getEmail().trim().toLowerCase();
 
         AppUser user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new RuntimeException("Invalid credentials: User not found for email " + email));
 
         // block login if email not verified
         if (!user.isEmailVerified()) {
@@ -235,6 +247,7 @@ public class AuthService {
 
         return new AuthResponse(newJwt, "Bearer", newRefreshToken.getToken());
     }
+    @Transactional
     public void forgotPassword(ForgotPasswordRequest req) {
         String email = req.getEmail().trim().toLowerCase();
         // IMPORTANT: response generic to prevent user enumeration

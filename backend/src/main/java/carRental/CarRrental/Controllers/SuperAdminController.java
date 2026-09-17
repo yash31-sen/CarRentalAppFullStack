@@ -158,7 +158,29 @@ public class SuperAdminController {
         );
     }
 
-    // ================= DRIVERS =================
+    @DeleteMapping("/users")
+    public ResponseEntity<Map<String, String>> deleteAllUsers() {
+        int count = superAdminService.deleteAllUsers();
+        return ResponseEntity.ok(
+                Map.of("message", "Deleted " + count + " user(s) with role USER")
+        );
+    }
+
+    @DeleteMapping("/admins")
+    public ResponseEntity<Map<String, String>> deleteAllAdmins() {
+        int count = superAdminService.deleteAllAdmins();
+        return ResponseEntity.ok(
+                Map.of("message", "Deleted " + count + " user(s) with role ADMIN")
+        );
+    }
+
+    @DeleteMapping("/drivers/all") // Used /drivers/all to not conflict if /drivers expects something else, or just /drivers
+    public ResponseEntity<Map<String, String>> deleteAllDrivers() {
+        int count = superAdminService.deleteAllDrivers();
+        return ResponseEntity.ok(
+                Map.of("message", "Deleted " + count + " user(s) with role DRIVER")
+        );
+    }
 
     @GetMapping("/drivers")
     public ResponseEntity<List<DriverProfile>> getAllDrivers() {

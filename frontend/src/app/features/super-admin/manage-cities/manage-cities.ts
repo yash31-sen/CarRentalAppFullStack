@@ -50,6 +50,17 @@ export class ManageCities implements OnInit {
     });
   }
 
+  // Pagination
+  currentPage = 0;
+  pageSize = 10;
+  get totalPages() { return Math.ceil(this.filteredCities.length / this.pageSize); }
+  get pagedCities() {
+    const start = this.currentPage * this.pageSize;
+    return this.filteredCities.slice(start, start + this.pageSize);
+  }
+  getPages(total: number) { return Array.from({ length: total }, (_, i) => i); }
+  onFilterChange() { this.currentPage = 0; }
+
   loading = false;
 
   constructor(

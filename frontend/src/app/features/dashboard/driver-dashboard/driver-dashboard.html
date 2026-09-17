@@ -1,98 +1,298 @@
-<div class="driver-dashboard-container">
-  
-  <div class="header-banner">
-    <h2>Driver Control Center</h2>
-    <p>Manage your real-time status and operational location</p>
-  </div>
+<div class="dd-container">
 
-  <!-- Error/Success Alerts -->
-  <div class="alert-container" *ngIf="errorMessage || successMessage">
-    <div class="error-msg" *ngIf="errorMessage">⚠️ {{ errorMessage }}</div>
-    <div class="success-msg" *ngIf="successMessage">✨ {{ successMessage }}</div>
-  </div>
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside class="dd-sidebar">
 
-  <div class="dashboard-grid">
-
-    <!-- Loading State -->
-    <div class="card loading-card" *ngIf="loading">
-      <div class="spinner"></div>
-      <p>Fetching your operational profile...</p>
+    <div class="dd-brand">
+      <span class="brand-logo">Drive<span class="brand-accent">X</span></span>
+      <span class="brand-sub">Driver Portal</span>
     </div>
 
-    <!-- Profile Details Card -->
-    <div class="card profile-card" *ngIf="!loading && profile">
-      
-      <div class="profile-header">
-        <div class="avatar-circle">
-          {{ profile.user?.name ? profile.user.name[0].toUpperCase() : 'D' }}
-        </div>
-        <div class="profile-title">
-          <h3>{{ profile.user?.name || 'Driver Name' }}</h3>
-          <p class="email">{{ profile.user?.email || 'driver@email.com' }}</p>
-        </div>
-        <div class="badge-status" [ngClass]="profile.status">
-          {{ profile.status }}
-        </div>
+    <!-- Driver Profile -->
+    <div class="dd-profile" *ngIf="!loading && profile">
+      <div class="dd-avatar">
+        {{ profile.user?.name ? profile.user.name[0].toUpperCase() : 'D' }}
       </div>
-
-      <div class="divider"></div>
-
-      <div class="details-grid">
-        <div class="detail-item">
-          <label>License Number</label>
-          <span>{{ profile.licenseNumber }}</span>
-        </div>
-        <div class="detail-item">
-          <label>Experience Years</label>
-          <span>{{ profile.experienceYears }} Years</span>
-        </div>
-        <div class="detail-item">
-          <label>Profile Status</label>
-          <span class="status-text" [ngClass]="profile.active ? 'active' : 'inactive'">
-            {{ profile.active ? 'Active Employee' : 'Suspended' }}
-          </span>
-        </div>
+      <div class="dd-profile-info">
+        <span class="dd-name">{{ profile.user?.name }}</span>
+        <span class="dd-email">{{ profile.user?.email }}</span>
+        <span class="dd-license">🪪 {{ profile.licenseNumber }}</span>
       </div>
-
     </div>
 
-    <!-- Actions/Controls Card -->
-    <div class="card controls-card" *ngIf="!loading && profile">
-      
-      <div class="section-header">
-        <h3>Operational Status</h3>
-        <p class="subtitle">Set your availability for accepting bookings</p>
-      </div>
-      
-      <div class="status-selector">
-        <button [class.active]="profile.status === 'AVAILABLE'" 
-                (click)="updateStatus('AVAILABLE')" class="status-btn available">
-          Available
-        </button>
-        <button [class.active]="profile.status === 'ON_TRIP'" 
-                (click)="updateStatus('ON_TRIP')" class="status-btn busy">
-          Busy
-        </button>
-        <button [class.active]="profile.status === 'INACTIVE'" 
-                (click)="updateStatus('INACTIVE')" class="status-btn offline">
-          Offline
-        </button>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="section-header">
-        <h3>Current Location</h3>
-        <p class="subtitle">Update your parking or pickup zone</p>
-      </div>
-      
-      <div class="location-form">
-        <input type="text" [(ngModel)]="locationInput" placeholder="Enter current city or area" />
-        <button (click)="updateLocation()" class="primary">Update Zone</button>
-      </div>
-
+    <!-- Status Indicator -->
+    <div class="dd-status-panel" *ngIf="profile">
+      <span class="status-dot" [class]="profile.status?.toLowerCase()"></span>
+      <span class="status-label">{{ statusLabel(profile.status) }}</span>
     </div>
 
-  </div>
+    <!-- Nav Tabs -->
+    <nav class="dd-nav">
+      <button class="dd-nav-item" [class.active]="activeTab === 'overview'"
+        (click)="activeTab = 'overview'">
+        🏠 <span>Overview</span>
+      </button>
+      <button class="dd-nav-item" [class.active]="activeTab === 'trip'"
+        (click)="activeTab = 'trip'; loadActiveBooking()">
+        🚗 <span>Active Trip</span>
+        <span class="nav-badge" *ngIf="activeBooking">1</span>
+      </button>
+    </nav>
 
+    <div class="sidebar-footer">
+      <button class="dd-logout" (click)="logout()">🚪 Logout</button>
+    </div>
+
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="dd-main">
+
+    <!-- Loading -->
+    <div class="dd-loading" *ngIf="loading">
+      <div class="dd-spinner"></div>
+      <p>Loading your profile...</p>
+    </div>
+
+    <!-- ─── OVERVIEW TAB ─────────────────────────────── -->
+    <section *ngIf="!loading && activeTab === 'overview'">
+
+      <div class="dd-page-header">
+        <div>
+          <h1>Welcome back, {{ profile?.user?.name?.split(' ')[0] || 'Driver' }}!</h1>
+          <p class="header-sub">Manage your status and location below</p>
+        </div>
+        <span class="dd-exp-badge">{{ profile?.experienceYears }} yrs experience</span>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="dd-stats">
+        <div class="dd-stat-card green">
+          <div class="stat-icon">🟢</div>
+          <div class="stat-info">
+            <span class="stat-label">Current Status</span>
+            <span class="stat-value">{{ statusLabel(profile?.status) }}</span>
+          </div>
+        </div>
+        <div class="dd-stat-card blue">
+          <div class="stat-icon">📍</div>
+          <div class="stat-info">
+            <span class="stat-label">Current Location</span>
+            <span class="stat-value">{{ profile?.currentLocation || 'Not set' }}</span>
+          </div>
+        </div>
+        <div class="dd-stat-card purple">
+          <div class="stat-icon">🗓️</div>
+          <div class="stat-info">
+            <span class="stat-label">Active Trip</span>
+            <span class="stat-value">{{ activeBooking ? 'Trip #' + activeBooking.id : 'None' }}</span>
+          </div>
+        </div>
+        <div class="dd-stat-card orange">
+          <div class="stat-icon">🪪</div>
+          <div class="stat-info">
+            <span class="stat-label">Employee Status</span>
+            <span class="stat-value" [style.color]="profile?.active ? 'var(--accent)' : 'var(--danger)'">
+              {{ profile?.active ? 'Active' : 'Suspended' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Grid -->
+      <div class="controls-grid">
+
+        <!-- Status Control -->
+        <div class="control-card">
+          <div class="control-header">
+            <h2>🟢 Availability Status</h2>
+            <p>Set your availability for trip assignments</p>
+          </div>
+          <div class="status-btns">
+            <button class="status-btn available"
+              [class.active]="profile?.status === 'AVAILABLE'"
+              [disabled]="updatingStatus || profile?.status === 'ON_TRIP'"
+              (click)="updateStatus('AVAILABLE')">
+              <span class="sbtn-icon">🟢</span>
+              <span class="sbtn-label">Available</span>
+              <span class="sbtn-sub">Ready for trips</span>
+            </button>
+            <button class="status-btn offline"
+              [class.active]="profile?.status === 'INACTIVE'"
+              [disabled]="updatingStatus || profile?.status === 'ON_TRIP'"
+              (click)="updateStatus('INACTIVE')">
+              <span class="sbtn-icon">⭕</span>
+              <span class="sbtn-label">Offline</span>
+              <span class="sbtn-sub">Not accepting</span>
+            </button>
+          </div>
+          <div class="on-trip-note" *ngIf="profile?.status === 'ON_TRIP'">
+            🚗 You're currently on a trip. Status will reset when the trip ends.
+          </div>
+          <div class="updating-indicator" *ngIf="updatingStatus">
+            <div class="mini-spinner"></div> Updating...
+          </div>
+        </div>
+
+        <!-- Location Control -->
+        <div class="control-card">
+          <div class="control-header">
+            <h2>📍 Current Location</h2>
+            <p>Update your city/zone so the system can assign nearby trips</p>
+          </div>
+          <div class="location-current">
+            <span class="loc-label">Currently in:</span>
+            <strong>{{ profile?.currentLocation || 'Not set' }}</strong>
+          </div>
+          <div class="location-form">
+            <input type="text" [(ngModel)]="locationInput"
+              placeholder="Enter city or zone (e.g. Mumbai, Delhi)" />
+            <button class="update-loc-btn" (click)="updateLocation()"
+              [disabled]="updatingLocation || !locationInput.trim()">
+              {{ updatingLocation ? 'Updating...' : 'Update Location' }}
+            </button>
+          </div>
+          <div class="updating-indicator" *ngIf="updatingLocation">
+            <div class="mini-spinner"></div> Saving...
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Active Booking Preview -->
+      <div class="active-trip-preview" *ngIf="activeBooking" (click)="activeTab = 'trip'">
+        <div class="atp-icon">🚗</div>
+        <div class="atp-info">
+          <strong>You have an active trip assignment</strong>
+          <span>{{ activeBooking.pickupCity }} → {{ activeBooking.dropCity }} · Click to view details</span>
+        </div>
+        <span class="atp-arrow">→</span>
+      </div>
+
+    </section>
+
+    <!-- ─── ACTIVE TRIP TAB ──────────────────────────── -->
+    <section *ngIf="!loading && activeTab === 'trip'">
+
+      <div class="dd-page-header">
+        <div>
+          <h1>🚗 Active Trip Assignment</h1>
+          <p class="header-sub">Your current booking details</p>
+        </div>
+      </div>
+
+      <!-- Loading booking -->
+      <div class="dd-loading small" *ngIf="loadingBooking">
+        <div class="dd-spinner"></div>
+        <p>Checking for active trips...</p>
+      </div>
+
+      <!-- No Active Booking -->
+      <div class="no-trip-card" *ngIf="!loadingBooking && !activeBooking">
+        <span class="no-trip-icon">🏁</span>
+        <h3>No Active Trip</h3>
+        <p>You don't have any confirmed or in-progress trip right now. Set your status to <strong>Available</strong> to receive assignments.</p>
+        <button class="go-available-btn" (click)="updateStatus('AVAILABLE'); activeTab = 'overview'">
+          Set Available →
+        </button>
+      </div>
+
+      <!-- Active Booking Card -->
+      <div class="trip-card" *ngIf="!loadingBooking && activeBooking">
+
+        <!-- Booking Header -->
+        <div class="trip-card-header">
+          <div>
+            <span class="trip-id">Booking #{{ activeBooking.id }}</span>
+            <span class="trip-status-badge" [class]="getBookingStatusClass(activeBooking.status)">
+              {{ bookingStatusLabel(activeBooking.status) }}
+            </span>
+          </div>
+          <span class="trip-type-badge">{{ activeBooking.tripType?.replace('_', ' ') }}</span>
+        </div>
+
+        <!-- Route Visual -->
+        <div class="route-visual">
+          <div class="route-point pickup">
+            <div class="rp-dot pickup-dot"></div>
+            <div class="rp-info">
+              <span class="rp-label">Pickup</span>
+              <strong>{{ activeBooking.pickupCity }}</strong>
+              <span class="rp-address">{{ activeBooking.pickupLocation }}</span>
+            </div>
+          </div>
+          <div class="route-line">
+            <span class="route-distance">{{ tripDays }} day{{ tripDays !== 1 ? 's' : '' }}</span>
+          </div>
+          <div class="route-point drop">
+            <div class="rp-dot drop-dot"></div>
+            <div class="rp-info">
+              <span class="rp-label">Drop</span>
+              <strong>{{ activeBooking.dropCity }}</strong>
+              <span class="rp-address">{{ activeBooking.dropLocation }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trip Details Grid -->
+        <div class="trip-details-grid">
+          <div class="trip-detail">
+            <span class="td-label">📅 Start Date</span>
+            <span class="td-value">{{ activeBooking.startDate }}</span>
+          </div>
+          <div class="trip-detail">
+            <span class="td-label">📅 End Date</span>
+            <span class="td-value">{{ activeBooking.endDate }}</span>
+          </div>
+          <div class="trip-detail">
+            <span class="td-label">🚗 Vehicle</span>
+            <span class="td-value">{{ activeBooking.car?.brand }} {{ activeBooking.car?.model }}</span>
+          </div>
+          <div class="trip-detail">
+            <span class="td-label">🔢 Plate No.</span>
+            <span class="td-value mono">{{ activeBooking.car?.carNumber }}</span>
+          </div>
+          <div class="trip-detail">
+            <span class="td-label">👤 Passenger</span>
+            <span class="td-value">{{ activeBooking.user?.name }}</span>
+          </div>
+          <div class="trip-detail">
+            <span class="td-label">📞 Contact</span>
+            <span class="td-value">{{ activeBooking.user?.email }}</span>
+          </div>
+          <div class="trip-detail">
+            <span class="td-label">🔑 Booking Type</span>
+            <span class="td-value">{{ activeBooking.bookingType?.replace('_', ' ') }}</span>
+          </div>
+          <div class="trip-detail">
+            <span class="td-label">💰 Trip Value</span>
+            <span class="td-value price">₹{{ activeBooking.totalPrice | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="trip-instructions" *ngIf="activeBooking.status === 'CONFIRMED'">
+          <span class="inst-icon">ℹ️</span>
+          <div>
+            <strong>Ready to start?</strong>
+            <p>Pick up the passenger from <strong>{{ activeBooking.pickupLocation }}</strong> on <strong>{{ activeBooking.startDate }}</strong>. The admin will mark the trip as In Progress once you depart.</p>
+          </div>
+        </div>
+        <div class="trip-instructions in-progress" *ngIf="activeBooking.status === 'IN_PROGRESS'">
+          <span class="inst-icon">🚗</span>
+          <div>
+            <strong>Trip is in progress</strong>
+            <p>Head to <strong>{{ activeBooking.dropLocation }}, {{ activeBooking.dropCity }}</strong>. Drop off the passenger safely and return the vehicle for inspection.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="dd-toast" [class.visible]="toastVisible" [class]="toastType">
+  {{ toastMsg }}
 </div>

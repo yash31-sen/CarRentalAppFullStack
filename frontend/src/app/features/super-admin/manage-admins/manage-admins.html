@@ -96,10 +96,10 @@
 
     <!-- SEARCH FILTERS -->
     <div class="filters-grid">
-      <input type="text" [(ngModel)]="searchName" placeholder="Filter by Name..." />
-      <input type="text" [(ngModel)]="searchEmail" placeholder="Filter by Email..." />
-      <input type="text" [(ngModel)]="searchCity" placeholder="Filter by City..." />
-      <select [(ngModel)]="searchStatus">
+      <input type="text" [(ngModel)]="searchName" (ngModelChange)="onFilterChange()" placeholder="Filter by Name..." />
+      <input type="text" [(ngModel)]="searchEmail" (ngModelChange)="onFilterChange()" placeholder="Filter by Email..." />
+      <input type="text" [(ngModel)]="searchCity" (ngModelChange)="onFilterChange()" placeholder="Filter by City..." />
+      <select [(ngModel)]="searchStatus" (ngModelChange)="onFilterChange()">
         <option value="">All Statuses</option>
         <option value="active">Active Only</option>
         <option value="inactive">Inactive Only</option>
@@ -126,7 +126,7 @@
 
       <tbody>
 
-      <tr *ngFor="let admin of filteredAdmins">
+      <tr *ngFor="let admin of pagedAdmins">
 
         <td>{{ admin.id }}</td>
 
@@ -194,6 +194,36 @@
       </tbody>
 
     </table>
+
+    <!-- Pagination -->
+    <div class="pagination-bar" *ngIf="filteredAdmins.length > 0">
+      <div class="pagination-info">
+        Showing <strong>{{ currentPage * pageSize + 1 }}&ndash;{{ (currentPage + 1) * pageSize < filteredAdmins.length ? (currentPage + 1) * pageSize : filteredAdmins.length }}</strong> of <strong>{{ filteredAdmins.length }}</strong> admins
+      </div>
+      <div class="page-size-selector">
+        Rows:
+        <select [(ngModel)]="pageSize" (ngModelChange)="currentPage = 0">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+        </select>
+      </div>
+      <div class="pagination-controls">
+        <button class="page-btn" (click)="currentPage = 0" [disabled]="currentPage === 0">«</button>
+        <button class="page-btn" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 0">‹</button>
+        <ng-container *ngFor="let p of getPages(totalPages)">
+          <button class="page-btn" [class.active]="p === currentPage" (click)="currentPage = p"
+            *ngIf="p === 0 || p === totalPages - 1 || (p >= currentPage - 1 && p <= currentPage + 1)">
+            {{ p + 1 }}
+          </button>
+          <span class="page-ellipsis"
+            *ngIf="(p === 1 && currentPage > 2) || (p === totalPages - 2 && currentPage < totalPages - 3)">…</span>
+        </ng-container>
+        <button class="page-btn" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages - 1">›</button>
+        <button class="page-btn" (click)="currentPage = totalPages - 1" [disabled]="currentPage === totalPages - 1">»</button>
+      </div>
+    </div>
 
   </div>
 

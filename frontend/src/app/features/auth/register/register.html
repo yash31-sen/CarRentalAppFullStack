@@ -8,18 +8,33 @@
 
       <div class="form-group">
         <input type="text" formControlName="name" placeholder="Full Name" />
+        <span class="field-error"
+          *ngIf="registerForm.get('name')?.invalid && registerForm.get('name')?.touched">
+          Name must be 2–50 characters.
+        </span>
       </div>
 
       <div class="form-group">
         <input type="email" formControlName="email" placeholder="Email Address" />
+        <span class="field-error"
+          *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+          Please enter a valid email address.
+        </span>
       </div>
 
       <div class="form-group">
         <input type="password" formControlName="password" placeholder="Password" />
+        <span class="field-hint" *ngIf="!registerForm.get('password')?.touched">
+          Must be 8+ chars with uppercase, number &amp; special char (@#$%^&amp;+=!)
+        </span>
+        <span class="field-error"
+          *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+          Password must be 8+ chars with uppercase, lowercase, number &amp; special character (@#$%^&amp;+=!).
+        </span>
       </div>
 
       <button type="submit" [disabled]="registerForm.invalid || loading">
-        {{ loading ? 'Registering...' : 'Register' }}
+        {{ loading ? 'Registering...' : 'Create Account' }}
       </button>
 
     </form>

@@ -47,6 +47,18 @@ export class ManageAdmins implements OnInit {
     });
   }
 
+  // Pagination
+  currentPage = 0;
+  pageSize = 10;
+
+  get totalPages() { return Math.ceil(this.filteredAdmins.length / this.pageSize); }
+  get pagedAdmins() {
+    const start = this.currentPage * this.pageSize;
+    return this.filteredAdmins.slice(start, start + this.pageSize);
+  }
+  getPages(total: number) { return Array.from({ length: total }, (_, i) => i); }
+  onFilterChange() { this.currentPage = 0; }
+
   loading = false;
 
   adminForm!: FormGroup;
