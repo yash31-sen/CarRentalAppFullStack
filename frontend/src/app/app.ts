@@ -1,5 +1,4 @@
 import { Component, inject } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Navbar } from './shared/navbar/navbar';
@@ -7,7 +6,7 @@ import { ToastService } from './core/services/toast';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ReactiveFormsModule, Navbar, CommonModule],
+  imports: [RouterOutlet, Navbar, CommonModule],
   template: `
     <app-navbar></app-navbar>
     <router-outlet></router-outlet>

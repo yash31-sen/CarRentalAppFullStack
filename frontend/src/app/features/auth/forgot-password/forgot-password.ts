@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 
@@ -11,7 +11,7 @@ import { AuthService } from '../../../core/services/auth';
   templateUrl: './forgot-password.html',
 })
 export class ForgotPassword {
-  forgotForm: any;
+  forgotForm!: FormGroup;
   loading = false;
   successMessage = '';
   errorMessage = '';

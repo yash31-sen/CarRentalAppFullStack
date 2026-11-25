@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environment';
 })
 export class SuperAdminService {
 
-  baseUrl = `${environment.apiUrl}/super-admin`;
+  private baseUrl = `${environment.apiUrl}/super-admin`;
 
   constructor(private http: HttpClient) {}
 

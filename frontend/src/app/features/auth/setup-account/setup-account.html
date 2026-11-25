@@ -12,14 +12,14 @@
     <form *ngIf="token" [formGroup]="setupForm" (ngSubmit)="submit()">
       <div class="form-group">
         <input type="password" formControlName="password" placeholder="Password" />
-        <div *ngIf="setupForm.get('password').touched && setupForm.get('password').invalid" class="error" style="text-align: left; font-size: 12px; margin-top: 5px;">
+        <div *ngIf="setupForm.get('password')?.touched && setupForm.get('password')?.invalid" class="error" style="text-align: left; font-size: 12px; margin-top: 5px;">
           Password must be at least 6 characters long.
         </div>
       </div>
 
       <div class="form-group">
         <input type="password" formControlName="confirmPassword" placeholder="Confirm Password" />
-        <div *ngIf="setupForm.get('confirmPassword').touched && setupForm.hasError('mismatch')" class="error" style="text-align: left; font-size: 12px; margin-top: 5px;">
+        <div *ngIf="setupForm.get('confirmPassword')?.touched && setupForm.hasError('mismatch')" class="error" style="text-align: left; font-size: 12px; margin-top: 5px;">
           Passwords do not match.
         </div>
       </div>

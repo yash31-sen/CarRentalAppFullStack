@@ -51,7 +51,7 @@ public class AdminCarService {
         }
 
         boolean cityExists = serviceCityRepository
-                .existsByCityNameAndActiveTrue(city);
+                .existsByCityNameIgnoreCaseAndActiveTrue(city);
 
         if (!cityExists) {
             throw new ResponseStatusException(
@@ -61,7 +61,7 @@ public class AdminCarService {
 
         // Step 5 - get parking address from service city
         ServiceCity serviceCity = serviceCityRepository
-                .findByCityName(city)
+                .findByCityNameIgnoreCase(city)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Service city not found"));

@@ -6,7 +6,9 @@ import carRental.CarRrental.Models.DriverProfile;
 import carRental.CarRrental.Models.DriverStatus;
 import carRental.CarRrental.Repositories.BookingRepository;
 import carRental.CarRrental.Repositories.DriverProfileRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class DriverSelfService {
@@ -22,7 +24,7 @@ public class DriverSelfService {
 
     public DriverProfile getMyProfile(String email) {
         return driverProfileRepository.findByUser_Email(email)
-                .orElseThrow(() -> new RuntimeException("Driver profile not found for: " + email));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Driver profile not found"));
     }
 
     public DriverProfile updateMyLocation(String email, String newLocation) {

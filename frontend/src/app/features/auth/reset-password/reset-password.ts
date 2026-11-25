@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { ToastService } from '../../../core/services/toast';
@@ -12,7 +12,7 @@ import { ToastService } from '../../../core/services/toast';
   templateUrl: './reset-password.html'
 })
 export class ResetPassword implements OnInit {
-  resetForm: any;
+  resetForm!: FormGroup;
   loading = false;
   errorMessage = '';
   token: string | null = null;
@@ -27,7 +27,7 @@ export class ResetPassword implements OnInit {
     this.resetForm = this.fb.group({
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]]
-    }, { validator: this.passwordMatchValidator });
+    }, { validators: this.passwordMatchValidator });
   }
 
   ngOnInit() {

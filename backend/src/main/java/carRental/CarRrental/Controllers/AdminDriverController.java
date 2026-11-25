@@ -7,7 +7,6 @@ import carRental.CarRrental.Services.AdminDriverService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,7 +14,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/drivers")
 @RequiredArgsConstructor
-@EnableMethodSecurity
 @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 public class AdminDriverController {
 

@@ -9,6 +9,12 @@ import java.util.Optional;
 public interface ServiceCityRepository
         extends JpaRepository<ServiceCity, Long> {
 
+    // check if city exists and is active (case-insensitive)
+    boolean existsByCityNameIgnoreCaseAndActiveTrue(String cityName);
+
+    // find city by name (case-insensitive)
+    Optional<ServiceCity> findByCityNameIgnoreCase(String cityName);
+
     // check if city exists and is active
     boolean existsByCityNameAndActiveTrue(String cityName);
 

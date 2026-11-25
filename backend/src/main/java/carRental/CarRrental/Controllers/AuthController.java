@@ -11,6 +11,7 @@ import carRental.CarRrental.Dtos.ResetPasswordRequest;
 import carRental.CarRrental.Dtos.GoogleLoginRequest;
 import carRental.CarRrental.Dtos.RefreshTokenRequest;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -57,21 +58,27 @@ public class AuthController {
 
 
     @PostMapping("/forgot-password")
-    public String forgotPassword(@RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
         authService.forgotPassword(request);
-        return "If the email exists, a reset link has been sent.";
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "If the email exists, a reset link has been sent.");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/reset-password")
-    public String resetPassword(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> resetPassword(@RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
-        return "Password reset successful.";
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Password reset successful.");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/setup-account")
-    public String setupAccount(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> setupAccount(@RequestBody ResetPasswordRequest request) {
         authService.setupAccount(request);
-        return "Account setup successful.";
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Account setup successful.");
+        return ResponseEntity.ok(response);
     }
 
 }

@@ -1,7 +1,5 @@
 package carRental.CarRrental.Models;
 
-import carRental.CarRrental.Dtos.RegisterRequest;
-import carRental.CarRrental.Dtos.ResetPasswordRequest;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -38,7 +36,7 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private RegisterRequest.BookingType bookingType;        // SELF_DRIVE / WITH_DRIVER
+    private BookingType bookingType;        // SELF_DRIVE / WITH_DRIVER
 
     // 👇 NEW
     @Enumerated(EnumType.STRING)

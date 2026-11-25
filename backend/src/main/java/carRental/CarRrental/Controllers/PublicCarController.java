@@ -2,20 +2,24 @@ package carRental.CarRrental.Controllers;
 
 import carRental.CarRrental.Models.Car;
 import carRental.CarRrental.Models.CarStatus;
+import carRental.CarRrental.Models.ServiceCity;
 import carRental.CarRrental.Repositories.CarRepository;
+import carRental.CarRrental.Repositories.ServiceCityRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/cars")
+@RequestMapping("/api")
 public class PublicCarController {
 
     private final CarRepository carRepository;
+    private final ServiceCityRepository serviceCityRepository;
 
-    public PublicCarController(CarRepository carRepository) {
+    public PublicCarController(CarRepository carRepository, ServiceCityRepository serviceCityRepository) {
         this.carRepository = carRepository;
+        this.serviceCityRepository = serviceCityRepository;
     }
 
     /**
@@ -23,7 +27,7 @@ public class PublicCarController {
      * Accessible by authenticated users.
      */
     @PreAuthorize("hasRole('USER')")
-    @GetMapping("/available")
+    @GetMapping("/cars/available")
     public List<Car> getAvailableCars(
             @RequestParam(required = false) String city) {
 
@@ -33,6 +37,19 @@ public class PublicCarController {
         }
         return carRepository.findAll().stream()
                 .filter(c -> c.isActive() && c.getStatus() == CarStatus.AVAILABLE)
+                .toList();
+    }
+
+    /**
+     * Returns list of unique active city names for user booking flow.
+     */
+    @GetMapping("/cities")
+    public List<String> getAvailableCities() {
+        return serviceCityRepository.findAll().stream()
+                .filter(ServiceCity::isActive)
+                .map(ServiceCity::getCityName)
+                .distinct()
+                .sorted()
                 .toList();
     }
 }

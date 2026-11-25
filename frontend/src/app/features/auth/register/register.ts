@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
  
 import { Router, RouterLink } from '@angular/router';
@@ -19,10 +19,12 @@ export class Register implements OnInit {
 
   errorMessage = '';
   loading = false;
-  registerForm:any
+  registerForm!: FormGroup;
  
 
   private googleInitialized = false;
+  private googleRetries = 0;
+  private maxGoogleRetries = 20;
 
   constructor(
     private fb: FormBuilder,
@@ -62,8 +64,11 @@ export class Register implements OnInit {
           width: 320
         });
       }
-    } else {
+    } else if (this.googleRetries < this.maxGoogleRetries) {
+      this.googleRetries++;
       setTimeout(() => this.initGoogleSignIn(), 250);
+    } else {
+      console.warn('Google Sign-In SDK failed to load after retries');
     }
   }
 

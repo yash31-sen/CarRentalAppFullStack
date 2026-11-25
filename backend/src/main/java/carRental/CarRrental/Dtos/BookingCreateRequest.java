@@ -1,5 +1,6 @@
 package carRental.CarRrental.Dtos;
 
+import carRental.CarRrental.Models.BookingType;
 import carRental.CarRrental.Models.TripType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,7 +17,7 @@ public class BookingCreateRequest {
     private Long carId;
 
     @NotNull(message = "Booking type is required")
-    private RegisterRequest.BookingType bookingType;        // SELF_DRIVE or WITH_DRIVER
+    private BookingType bookingType;        // SELF_DRIVE or WITH_DRIVER
 
     @NotNull(message = "Trip type is required")
     private TripType tripType;              // ROUND_TRIP or ONE_WAY

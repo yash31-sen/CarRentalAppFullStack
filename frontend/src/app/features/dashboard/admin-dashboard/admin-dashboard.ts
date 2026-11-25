@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AdminService } from '../../../core/services/admin';
 import { AuthService } from '../../../core/services/auth';
 import { ToastService } from '../../../core/services/toast';
@@ -90,7 +91,8 @@ export class AdminDashboard implements OnInit {
   constructor(
     private adminService: AdminService,
     private authService: AuthService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -183,7 +185,7 @@ export class AdminDashboard implements OnInit {
 
   logout() {
     this.authService.logout();
-    window.location.reload();
+    this.router.navigate(['/login']);
   }
 
   // CAR OPERATIONS

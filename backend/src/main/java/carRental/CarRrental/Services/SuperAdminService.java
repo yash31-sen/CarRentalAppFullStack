@@ -425,7 +425,7 @@ public class SuperAdminService {
             }
 
             // verify admin's city matches
-            if (!admin.getCity().equalsIgnoreCase(req.getCityName())) {
+            if (admin.getCity() == null || !admin.getCity().equalsIgnoreCase(req.getCityName())) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Admin's city does not match: "
@@ -532,7 +532,7 @@ public class SuperAdminService {
         }
 
         // verify city matches
-        if (!admin.getCity().equalsIgnoreCase(city.getCityName())) {
+        if (admin.getCity() == null || !admin.getCity().equalsIgnoreCase(city.getCityName())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Admin's city " + admin.getCity()

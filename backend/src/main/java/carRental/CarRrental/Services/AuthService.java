@@ -7,21 +7,18 @@ import carRental.CarRrental.Models.UserRole;
 import carRental.CarRrental.Models.UserToken;
 import carRental.CarRrental.Repositories.AppUserRepository;
 import carRental.CarRrental.Repositories.UserTokenRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
-
-import carRental.CarRrental.Models.TokenType;
-import carRental.CarRrental.Models.UserRole;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthService {
@@ -99,17 +96,22 @@ public class AuthService {
         String email = req.getEmail().trim().toLowerCase();
 
         AppUser user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid credentials: User not found for email " + email));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
 
         // block login if email not verified
         if (!user.isEmailVerified()) {
-            throw new RuntimeException("Please verify your email first");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please verify your email first");
+        }
+
+        // block login if deactivated
+        if (!user.isActive()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is deactivated");
         }
 
         // password check (raw vs hashed)
         boolean ok = passwordEncoder.matches(req.getPassword(), user.getPasswordHash());
         if (!ok) {
-            throw new RuntimeException("Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
         String jwt = jwtService.generateToken(user);
@@ -122,7 +124,7 @@ public class AuthService {
     public AuthResponse googleLogin(GoogleLoginRequest req) {
         String idToken = req.getCredential();
         if (idToken == null || idToken.trim().isEmpty()) {
-            throw new RuntimeException("Google ID Token is missing");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Google ID Token is missing");
         }
 
         // Call Google Tokeninfo API
@@ -132,17 +134,17 @@ public class AuthService {
         try {
             ResponseEntity<Map> response = restTemplate.getForEntity(googleUrl, Map.class);
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-                throw new RuntimeException("Invalid Google token");
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Google token");
             }
             body = (Map<String, Object>) response.getBody();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to verify Google token: " + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Failed to verify Google token: " + e.getMessage());
         }
 
         // Extract user information
         String email = (String) body.get("email");
         if (email == null) {
-            throw new RuntimeException("Email not provided by Google token");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email not provided by Google token");
         }
         email = email.trim().toLowerCase();
 

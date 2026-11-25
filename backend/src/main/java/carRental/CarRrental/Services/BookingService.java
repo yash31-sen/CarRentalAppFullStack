@@ -64,7 +64,7 @@ public class BookingService {
         }
 
         // Step 6 - validate driving license for self drive
-        if (req.getBookingType() == RegisterRequest.BookingType.SELF_DRIVE &&
+        if (req.getBookingType() == BookingType.SELF_DRIVE &&
                 (req.getDrivingLicenseNumber() == null ||
                         req.getDrivingLicenseNumber().isBlank())) {
             throw new ResponseStatusException(
@@ -178,7 +178,7 @@ public class BookingService {
         // ============================
         // SELF DRIVE FLOW
         // ============================
-        if (b.getBookingType() == RegisterRequest.BookingType.SELF_DRIVE) {
+        if (b.getBookingType() == BookingType.SELF_DRIVE) {
             b.setStatus(BookingStatus.VERIFICATION_PENDING);
             return bookingRepository.save(b);
         }

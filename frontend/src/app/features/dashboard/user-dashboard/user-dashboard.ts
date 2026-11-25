@@ -97,8 +97,18 @@ export class UserDashboard implements OnInit {
   }
 
   loadCities() {
-    this.http.get<ServiceCity[]>(`${this.baseUrl}/super-admin/cities`).subscribe({
-      next: c => this.cities = c.filter(x => x.active),
+    this.http.get<string[]>(`${this.baseUrl}/api/cities`).subscribe({
+      next: (names: string[]) => {
+        this.cities = names.map((name, idx) => ({
+          id: idx + 1,
+          cityName: name,
+          parkingAddress: '',
+          parkingContact: '',
+          oneWayFee: 0,
+          admin: null,
+          active: true
+        }));
+      },
       error: () => {}
     });
   }

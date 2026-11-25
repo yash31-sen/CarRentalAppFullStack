@@ -1,5 +1,6 @@
 package carRental.CarRrental.Models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,6 +23,7 @@ public class AppUser {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @JsonIgnore
     @Column(nullable = false, name = "password_hash")
     private String passwordHash;
 
@@ -33,7 +35,7 @@ public class AppUser {
     private boolean emailVerified = false;
 
     @Column(nullable = false, name = "is_active")
-    public boolean isActive = true;
+    private boolean isActive = true;
 
     @Column(name = "city")
     private String city;                // 👈 NEW
