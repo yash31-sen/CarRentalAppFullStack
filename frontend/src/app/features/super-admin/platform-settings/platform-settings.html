@@ -1,0 +1,98 @@
+<div class="platform-settings">
+  <div class="top-bar">
+    <h2>Platform Settings</h2>
+    <p class="subtitle">Global marketplace commission, booking policies, verification rules, and audit trail</p>
+  </div>
+
+  <div class="card">
+    <h3>Marketplace Configuration</h3>
+    <p *ngIf="lastUpdatedInfo" class="meta-info">{{ lastUpdatedInfo }}</p>
+
+    <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()">
+      <div class="form-grid">
+        <div class="field">
+          <label>Default Commission (%)</label>
+          <input type="number" step="0.5" formControlName="defaultPlatformCommissionPercent" />
+        </div>
+        <div class="field">
+          <label>Default Service Fee (₹)</label>
+          <input type="number" formControlName="defaultPlatformServiceFee" />
+        </div>
+        <div class="field">
+          <label>Min Booking Duration (Days)</label>
+          <input type="number" formControlName="minBookingDurationDays" />
+        </div>
+        <div class="field">
+          <label>Max Booking Duration (Days)</label>
+          <input type="number" formControlName="maxBookingDurationDays" />
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Cancellation Policy</label>
+          <textarea rows="3" formControlName="cancellationPolicy"></textarea>
+        </div>
+        <div class="field">
+          <label>Refund Policy</label>
+          <textarea rows="3" formControlName="refundPolicy"></textarea>
+        </div>
+      </div>
+
+      <div class="toggles-grid">
+        <label class="toggle-item">
+          <input type="checkbox" formControlName="hostVerificationRequired" />
+          <span>Host Verification Required Before Listing</span>
+        </label>
+        <label class="toggle-item">
+          <input type="checkbox" formControlName="guestVerificationRequired" />
+          <span>Guest Verification Required Before Booking</span>
+        </label>
+        <label class="toggle-item">
+          <input type="checkbox" formControlName="vehicleListingApprovalRequired" />
+          <span>Vehicle Listing Approval Required</span>
+        </label>
+        <label class="toggle-item">
+          <input type="checkbox" formControlName="oneWayBookingEnabled" />
+          <span>Enable One-Way Bookings</span>
+        </label>
+      </div>
+
+      <button type="submit" [disabled]="saving || settingsForm.invalid">
+        {{ saving ? 'Saving Settings...' : 'Save Platform Settings' }}
+      </button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Administrative Audit Log</h3>
+    <p *ngIf="auditLogs.length === 0" class="empty-state">No audit log entries recorded yet.</p>
+
+    <table *ngIf="auditLogs.length > 0">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Actor</th>
+          <th>Action</th>
+          <th>Entity</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of auditLogs">
+          <td>{{ log.createdAt | date:'short' }}</td>
+          <td>{{ log.actorEmail }}</td>
+          <td><span class="status active">{{ log.action }}</span></td>
+          <td>{{ log.entityType }} #{{ log.entityId || '-' }}</td>
+          <td>{{ log.details }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="pagination-bar" *ngIf="auditTotalPages > 1">
+      <button class="page-btn" (click)="loadAuditLogs(auditPage - 1)" [disabled]="auditPage === 0">‹</button>
+      <span class="pagination-info">Page {{ auditPage + 1 }} of {{ auditTotalPages }}</span>
+      <button class="page-btn" (click)="loadAuditLogs(auditPage + 1)" [disabled]="auditPage >= auditTotalPages - 1">›</button>
+    </div>
+  </div>
+</div>

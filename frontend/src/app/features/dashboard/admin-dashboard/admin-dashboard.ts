@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { AdminService } from '../../../core/services/admin';
 import { AuthService } from '../../../core/services/auth';
 import { ToastService } from '../../../core/services/toast';
-import { Car, DriverProfile, Booking } from '../../../core/models';
+import { HostDetail, HostSummary } from '../../../core/models';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -15,78 +15,86 @@ import { Car, DriverProfile, Booking } from '../../../core/models';
   styleUrls: ['./admin-dashboard.css']
 })
 export class AdminDashboard implements OnInit {
-  activeTab: 'dashboard' | 'cars' | 'drivers' | 'bookings' = 'dashboard';
-  bookingSubTab: 'all' | 'verification' | 'assignment' | 'inspection' = 'all';
+  activeTab: 'dashboard' | 'cars' | 'hosts' | 'bookings' | 'inspections' = 'dashboard';
+  bookingSubTab: 'all' | 'verification' | 'issues' = 'all';
 
-  // Stats
+  // Admin identity & city scope
+  adminName = 'Administrator';
+  adminEmail = '';
+  adminRole = 'ADMIN';
+  assignedCities: string[] = [];
+  selectedCity = '';
+
+  // Overview stats & dynamic action queue
+  loadingDashboard = false;
   stats = {
-    totalCars: 0,
-    availableCars: 0,
+    totalHosts: 0,
+    verifiedHosts: 0,
+    pendingHostApprovals: 0,
+    totalListedVehicles: 0,
+    availableVehicles: 0,
+    bookedVehicles: 0,
+    pendingVehicleApprovals: 0,
     activeBookings: 0,
-    pendingVerifications: 0,
-    pendingAssignments: 0,
-    pendingInspections: 0,
-    totalDrivers: 0,
-    availableDrivers: 0
+    pendingLicenceVerifications: 0,
+    pendingInspections: 0
   };
+  actionItems: any[] = [];
 
   // Lists
-  cars: Car[] = [];
-  drivers: DriverProfile[] = [];
-  bookings: Booking[] = [];
-  availableDriversForAssignment: DriverProfile[] = [];
+  cars: any[] = [];
+  hosts: HostSummary[] = [];
+  bookings: any[] = [];
+  issues: any[] = [];
+  inspections: any[] = [];
+  supportAgents: any[] = [];
 
-  // Admin details
-  adminEmail = '';
-  adminCity = '';
+  // Filters
+  carFilter = { search: '', approvalStatus: '', status: '', category: '' };
+  hostFilter = { search: '', verificationStatus: '', accountStatus: '' };
+  bookingFilter = { search: '', status: '', paymentStatus: '' };
+  inspectionFilter = { status: '', type: '' };
 
-  // Search Filters
-  carFilter = { query: '', status: '' };
-  driverFilter = { name: '', status: '' };
-  bookingFilter = { id: '', type: '', status: '' };
+  // Pagination
+  carPage = 0; carPageSize = 10;
+  hostPage = 0; hostPageSize = 10;
+  bookingPage = 0; bookingPageSize = 10;
+  inspectionPage = 0; inspectionPageSize = 10;
 
-  // Pagination – Cars
-  carPage = 0;
-  carPageSize = 10;
+  // Detail Modals
+  selectedCar: any = null;
+  showCarDetailModal = false;
+  selectedHost: HostDetail | null = null;
+  showHostDetailModal = false;
+  selectedBooking: any = null;
+  showBookingDetailModal = false;
+  selectedInspection: any = null;
+  showInspectionDetailModal = false;
 
-  // Pagination – Drivers
-  driverPage = 0;
-  driverPageSize = 10;
-
-  // Pagination – Bookings
-  bookingPage = 0;
-  bookingPageSize = 10;
-
-  // Modals & Action variables
-  showCarModal = false;
-  isEditCar = false;
-  carForm = {
-    id: 0,
-    carNumber: '',
-    brand: '',
-    model: '',
-    carClass: 'SEDAN' as Car['carClass'],
-    fuelType: 'PETROL' as Car['fuelType'],
-    transmission: 'AUTOMATIC' as Car['transmission'],
-    pricePerDay: 1500,
-    currentLocation: ''
-  };
-
-  showDriverModal = false;
-  driverForm = {
-    name: '',
-    email: '',
-    password: '',
-    licenseNumber: '',
-    experienceYears: 2,
-    currentLocation: ''
-  };
-
-  // Booking details popups
-  selectedBooking: Booking | null = null;
+  // Licence Verification Modal
   showLicensePopup = false;
-  showAssignmentPopup = false;
-  selectedDriverIdForAssignment = '';
+  licenseRemarks = '';
+
+  // Reason / Action Modal (for Reject / Resubmission / Suspend / Disable)
+  showReasonModal = false;
+  reasonTitle = '';
+  reasonTargetType: 'car' | 'host' = 'car';
+  reasonAction: 'reject' | 'resubmission' | 'suspend' | 'disable' = 'reject';
+  reasonTargetId = 0;
+  actionReason = '';
+
+  // Escalate / Resolve Issue Modal
+  showIssueModal = false;
+  selectedIssue: any = null;
+  issueMode: 'escalate' | 'resolve' = 'escalate';
+  selectedSupportAgentId: number | null = null;
+  issueRemarks = '';
+
+  // Escalate Inspection Modal
+  showEscalateInspectionModal = false;
+  escalateInspectionId = 0;
+  inspectionEscalationRemarks = '';
+  suspendVehicleOnEscalate = false;
 
   constructor(
     private adminService: AdminService,
@@ -96,353 +104,406 @@ export class AdminDashboard implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.extractAdminDetails();
-    this.loadAllData();
-  }
-
-  extractAdminDetails() {
-    const fullToken = this.authService.getToken();
-    if (fullToken) {
-      try {
-        const token = fullToken.split(' ')[1];
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        this.adminEmail = payload.sub || '';
-        this.adminCity = payload.city || 'Global';
-      } catch (e) {
-        console.error('Error decoding token', e);
-      }
-    }
-  }
-
-  loadAllData() {
+    this.loadOverview();
     this.loadCars();
-    this.loadDrivers();
+    this.loadHosts();
     this.loadBookings();
+    this.loadIssues();
+    this.loadInspections();
+    this.loadSupportAgents();
   }
 
-  loadCars() {
-    this.adminService.getCars().subscribe({
-      next: (res) => {
-        this.cars = res;
-        this.calculateStats();
-      },
-      error: (err) => console.error(err)
-    });
-  }
-
-  loadDrivers() {
-    this.adminService.getDrivers().subscribe({
-      next: (res) => {
-        this.drivers = res;
-        this.calculateStats();
-      },
-      error: (err) => console.error(err)
-    });
-  }
-
-  loadBookings() {
-    this.adminService.getBookings().subscribe({
-      next: (res) => {
-        this.bookings = res;
-        this.calculateStats();
-      },
-      error: (err) => console.error(err)
-    });
-  }
-
-  calculateStats() {
-    this.stats.totalCars = this.cars.length;
-    this.stats.availableCars = this.cars.filter(c => c.status === 'AVAILABLE' && c.active).length;
-    this.stats.totalDrivers = this.drivers.length;
-    this.stats.availableDrivers = this.drivers.filter(d => d.status === 'AVAILABLE' && d.active).length;
-
-    this.stats.activeBookings = this.bookings.filter(
-      b => b.status === 'IN_PROGRESS' || b.status === 'CONFIRMED'
-    ).length;
-    this.stats.pendingVerifications = this.bookings.filter(b => b.status === 'VERIFICATION_PENDING').length;
-    this.stats.pendingAssignments = this.bookings.filter(b => b.status === 'DRIVER_ASSIGNMENT_PENDING').length;
-    this.stats.pendingInspections = this.bookings.filter(b => b.status === 'INSPECTION_PENDING').length;
-  }
-
-  // NAVIGATION & TAB TOGGLES
-  switchTab(tab: typeof this.activeTab) {
-    this.activeTab = tab;
+  onCityFilterChange(): void {
     this.carPage = 0;
-    this.driverPage = 0;
+    this.hostPage = 0;
     this.bookingPage = 0;
-    this.loadAllData();
+    this.inspectionPage = 0;
+    this.loadOverview();
+    this.loadCars();
+    this.loadHosts();
+    this.loadBookings();
+    this.loadIssues();
+    this.loadInspections();
   }
 
-  switchBookingSubTab(subTab: typeof this.bookingSubTab) {
+  loadOverview(): void {
+    this.loadingDashboard = true;
+    this.adminService.getDashboardStats(this.selectedCity || undefined).subscribe({
+      next: (res) => {
+        this.adminName = res.adminName || 'Administrator';
+        this.adminEmail = res.adminEmail || '';
+        this.adminRole = res.adminRole || 'ADMIN';
+        this.assignedCities = res.assignedCities || [];
+        this.stats = {
+          totalHosts: res.totalHosts || 0,
+          verifiedHosts: res.verifiedHosts || 0,
+          pendingHostApprovals: res.pendingHostApprovals || 0,
+          totalListedVehicles: res.totalListedVehicles || 0,
+          availableVehicles: res.availableVehicles || 0,
+          bookedVehicles: res.bookedVehicles || 0,
+          pendingVehicleApprovals: res.pendingVehicleApprovals || 0,
+          activeBookings: res.activeBookings || 0,
+          pendingLicenceVerifications: res.pendingLicenceVerifications || 0,
+          pendingInspections: res.pendingInspections || 0
+        };
+        this.actionItems = res.actionItems || [];
+        this.loadingDashboard = false;
+      },
+      error: (err) => {
+        this.toastService.showError(err.error?.message || 'Failed to load dashboard overview');
+        this.loadingDashboard = false;
+      }
+    });
+  }
+
+  loadCars(): void {
+    this.adminService.getCars({
+      city: this.selectedCity || undefined,
+      approvalStatus: this.carFilter.approvalStatus || undefined,
+      status: this.carFilter.status || undefined,
+      category: this.carFilter.category || undefined,
+      search: this.carFilter.search.trim() || undefined
+    }).subscribe({
+      next: (res) => { this.cars = res; this.carPage = 0; },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to load vehicle listings')
+    });
+  }
+
+  loadHosts(): void {
+    this.adminService.getHosts({
+      city: this.selectedCity || undefined,
+      verificationStatus: this.hostFilter.verificationStatus || undefined,
+      accountStatus: this.hostFilter.accountStatus || undefined,
+      search: this.hostFilter.search.trim() || undefined
+    }).subscribe({
+      next: (res) => { this.hosts = res; this.hostPage = 0; },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to load hosts')
+    });
+  }
+
+  loadBookings(): void {
+    this.adminService.getBookings({
+      city: this.selectedCity || undefined,
+      status: this.bookingFilter.status || undefined,
+      paymentStatus: this.bookingFilter.paymentStatus || undefined,
+      search: this.bookingFilter.search.trim() || undefined
+    }).subscribe({
+      next: (res) => { this.bookings = res; this.bookingPage = 0; },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to load bookings')
+    });
+  }
+
+  loadIssues(): void {
+    this.adminService.getIssues(this.selectedCity || undefined).subscribe({
+      next: (res) => this.issues = res,
+      error: () => {}
+    });
+  }
+
+  loadSupportAgents(): void {
+    this.adminService.getSupportAgents().subscribe({
+      next: (res) => this.supportAgents = res,
+      error: () => {}
+    });
+  }
+
+  loadInspections(): void {
+    this.adminService.getInspections({
+      city: this.selectedCity || undefined,
+      status: this.inspectionFilter.status || undefined,
+      type: this.inspectionFilter.type || undefined
+    }).subscribe({
+      next: (res) => { this.inspections = res; this.inspectionPage = 0; },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to load inspections')
+    });
+  }
+
+  switchTab(tab: typeof this.activeTab): void {
+    this.activeTab = tab;
+    if (tab === 'dashboard') this.loadOverview();
+    if (tab === 'cars') this.loadCars();
+    if (tab === 'hosts') this.loadHosts();
+    if (tab === 'bookings') { this.loadBookings(); this.loadIssues(); }
+    if (tab === 'inspections') this.loadInspections();
+  }
+
+  switchBookingSubTab(subTab: typeof this.bookingSubTab): void {
     this.bookingSubTab = subTab;
     this.bookingPage = 0;
   }
 
-  // PAGINATION HELPERS
+  navigateActionItem(item: any): void {
+    if (item.targetTab) {
+      this.switchTab(item.targetTab);
+      if (item.targetTab === 'bookings' && item.targetSubTab) {
+        this.switchBookingSubTab(item.targetSubTab);
+      }
+    }
+  }
+
   getPages(totalPages: number): number[] {
     return Array.from({ length: totalPages }, (_, i) => i);
   }
 
-  logout() {
+  logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
 
-  // CAR OPERATIONS
-  openAddCarModal() {
-    this.isEditCar = false;
-    this.carForm = {
-      id: 0,
-      carNumber: '',
-      brand: '',
-      model: '',
-      carClass: 'SEDAN',
-      fuelType: 'PETROL',
-      transmission: 'AUTOMATIC',
-      pricePerDay: 1500,
-      currentLocation: ''
-    };
-    this.showCarModal = true;
-  }
+  // ================= VEHICLE LISTING ACTIONS =================
 
-  openEditCarModal(car: Car) {
-    this.isEditCar = true;
-    this.carForm = {
-      id: car.id,
-      carNumber: car.carNumber,
-      brand: car.brand,
-      model: car.model,
-      carClass: car.carClass,
-      fuelType: car.fuelType,
-      transmission: car.transmission,
-      pricePerDay: car.pricePerDay,
-      currentLocation: car.currentLocation
-    };
-    this.showCarModal = true;
-  }
-
-  closeCarModal() {
-    this.showCarModal = false;
-  }
-
-  submitCarForm() {
-    if (this.isEditCar) {
-      this.adminService.updateCar(this.carForm.id, this.carForm).subscribe({
-        next: () => {
-          this.toastService.showSuccess('Car details updated successfully');
-          this.closeCarModal();
-          this.loadCars();
-        },
-        error: (err) => {
-          this.toastService.showError(err.error?.message || 'Failed to update car details');
-        }
-      });
-    } else {
-      this.adminService.addCar(this.carForm).subscribe({
-        next: () => {
-          this.toastService.showSuccess('New car added to inventory');
-          this.closeCarModal();
-          this.loadCars();
-        },
-        error: (err) => {
-          this.toastService.showError(err.error?.message || 'Failed to add new car');
-        }
-      });
-    }
-  }
-
-  toggleCarStatus(car: Car) {
-    if (car.active) {
-      if (confirm(`Are you sure you want to disable car ${car.brand} ${car.model}?`)) {
-        this.adminService.disableCar(car.id).subscribe({
-          next: () => {
-            this.toastService.showSuccess('Car disabled successfully');
-            this.loadCars();
-          },
-          error: (err) => this.toastService.showError('Failed to disable car')
-        });
-      }
-    } else {
-      this.adminService.updateCar(car.id, { active: true, status: 'AVAILABLE' }).subscribe({
-        next: () => {
-          this.toastService.showSuccess('Car enabled successfully');
-          this.loadCars();
-        },
-        error: (err) => this.toastService.showError('Failed to enable car')
-      });
-    }
-  }
-
-  get filteredCars() {
-    return this.cars.filter(car => {
-      const matchQuery = !this.carFilter.query ||
-        `${car.brand} ${car.model} ${car.carNumber}`.toLowerCase().includes(this.carFilter.query.toLowerCase());
-      const matchStatus = !this.carFilter.status || car.status === this.carFilter.status;
-      return matchQuery && matchStatus;
-    });
-  }
-
-  get carTotalPages() { return Math.ceil(this.filteredCars.length / this.carPageSize); }
-  get pagedCars() {
+  get carTotalPages(): number { return Math.ceil(this.cars.length / this.carPageSize); }
+  get pagedCars(): any[] {
     const start = this.carPage * this.carPageSize;
-    return this.filteredCars.slice(start, start + this.carPageSize);
-  }
-  onCarFilterChange() { this.carPage = 0; }
-
-  // DRIVER OPERATIONS
-  openAddDriverModal() {
-    this.driverForm = {
-      name: '',
-      email: '',
-      password: '',
-      licenseNumber: '',
-      experienceYears: 3,
-      currentLocation: this.adminCity !== 'Global' ? this.adminCity : ''
-    };
-    this.showDriverModal = true;
+    return this.cars.slice(start, start + this.carPageSize);
   }
 
-  closeDriverModal() {
-    this.showDriverModal = false;
-  }
-
-  submitDriverForm() {
-    this.adminService.addDriver(this.driverForm).subscribe({
-      next: () => {
-        this.toastService.showSuccess('Driver registered and invitation email sent');
-        this.closeDriverModal();
-        this.loadDrivers();
+  openCarDetail(carId: number): void {
+    this.adminService.getCarDetails(carId).subscribe({
+      next: (res) => {
+        this.selectedCar = res;
+        this.showCarDetailModal = true;
       },
-      error: (err) => {
-        this.toastService.showError(err.error?.message || 'Failed to add driver');
-      }
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to load vehicle details')
     });
   }
 
-  toggleDriverStatus(driver: DriverProfile) {
-    const action = driver.active ? 'disable' : 'activate';
-    if (confirm(`Are you sure you want to ${action} driver ${driver.user.name}?`)) {
-      if (driver.active) {
-        this.adminService.disableDriver(driver.id).subscribe({
-          next: () => {
-            this.toastService.showSuccess('Driver disabled successfully');
-            this.loadDrivers();
-          },
-          error: (err) => this.toastService.showError('Failed to disable driver')
-        });
-      } else {
-        this.adminService.updateDriver(driver.id, { active: true, status: 'AVAILABLE' }).subscribe({
-          next: () => {
-            this.toastService.showSuccess('Driver activated successfully');
-            this.loadDrivers();
-          },
-          error: (err) => this.toastService.showError('Failed to activate driver')
-        });
-      }
+  approveCar(carId: number): void {
+    this.adminService.approveCar(carId).subscribe({
+      next: () => {
+        this.toastService.showSuccess('Vehicle listing approved');
+        this.loadCars();
+        this.loadOverview();
+        if (this.showCarDetailModal && this.selectedCar?.id === carId) this.openCarDetail(carId);
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to approve vehicle')
+    });
+  }
+
+  reactivateCar(carId: number): void {
+    this.adminService.reactivateCar(carId).subscribe({
+      next: () => {
+        this.toastService.showSuccess('Vehicle reactivated');
+        this.loadCars();
+        this.loadOverview();
+        if (this.showCarDetailModal && this.selectedCar?.id === carId) this.openCarDetail(carId);
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to reactivate vehicle')
+    });
+  }
+
+  // ================= HOST ACTIONS =================
+
+  get hostTotalPages(): number { return Math.ceil(this.hosts.length / this.hostPageSize); }
+  get pagedHosts(): HostSummary[] {
+    const start = this.hostPage * this.hostPageSize;
+    return this.hosts.slice(start, start + this.hostPageSize);
+  }
+
+  openHostDetail(hostId: number): void {
+    this.adminService.getHostDetails(hostId).subscribe({
+      next: (res) => {
+        this.selectedHost = res;
+        this.showHostDetailModal = true;
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to load host details')
+    });
+  }
+
+  approveHost(hostId: number): void {
+    this.adminService.approveHost(hostId).subscribe({
+      next: () => {
+        this.toastService.showSuccess('Host approved successfully');
+        this.loadHosts();
+        this.loadOverview();
+        if (this.showHostDetailModal && this.selectedHost?.id === hostId) this.openHostDetail(hostId);
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to approve host')
+    });
+  }
+
+  toggleHostActive(host: HostSummary): void {
+    const req = host.active ? this.adminService.deactivateHost(host.id) : this.adminService.reactivateHost(host.id);
+    req.subscribe({
+      next: () => {
+        this.toastService.showSuccess(`Host ${host.active ? 'deactivated' : 'reactivated'}`);
+        this.loadHosts();
+        this.loadOverview();
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to update host status')
+    });
+  }
+
+  // ================= SHARED REASON MODAL =================
+
+  openReasonModal(targetType: 'car' | 'host', id: number, action: 'reject' | 'resubmission' | 'suspend' | 'disable'): void {
+    this.reasonTargetType = targetType;
+    this.reasonTargetId = id;
+    this.reasonAction = action;
+    this.actionReason = '';
+    const label = targetType === 'car' ? 'Vehicle' : 'Host';
+    this.reasonTitle = `${action.charAt(0).toUpperCase() + action.slice(1)} ${label}`;
+    this.showReasonModal = true;
+  }
+
+  submitReasonAction(): void {
+    if (this.reasonAction !== 'disable' && !this.actionReason.trim()) {
+      this.toastService.showError('Please provide a reason');
+      return;
     }
-  }
 
-  get filteredDrivers() {
-    return this.drivers.filter(driver => {
-      const matchName = !this.driverFilter.name ||
-        driver.user.name.toLowerCase().includes(this.driverFilter.name.toLowerCase()) ||
-        driver.user.email.toLowerCase().includes(this.driverFilter.name.toLowerCase());
-      const matchStatus = !this.driverFilter.status || driver.status === this.driverFilter.status;
-      return matchName && matchStatus;
+    let req;
+    if (this.reasonTargetType === 'car') {
+      if (this.reasonAction === 'reject') req = this.adminService.rejectCar(this.reasonTargetId, this.actionReason.trim());
+      else if (this.reasonAction === 'resubmission') req = this.adminService.requestCarResubmission(this.reasonTargetId, this.actionReason.trim());
+      else if (this.reasonAction === 'suspend') req = this.adminService.suspendCar(this.reasonTargetId, this.actionReason.trim());
+      else req = this.adminService.disableCar(this.reasonTargetId, this.actionReason.trim());
+    } else {
+      if (this.reasonAction === 'reject') req = this.adminService.rejectHost(this.reasonTargetId, this.actionReason.trim());
+      else if (this.reasonAction === 'resubmission') req = this.adminService.requestHostResubmission(this.reasonTargetId, this.actionReason.trim());
+      else req = this.adminService.suspendHost(this.reasonTargetId, this.actionReason.trim());
+    }
+
+    req.subscribe({
+      next: () => {
+        this.toastService.showSuccess('Action completed successfully');
+        this.showReasonModal = false;
+        if (this.reasonTargetType === 'car') {
+          this.loadCars();
+          if (this.showCarDetailModal && this.selectedCar?.id === this.reasonTargetId) this.openCarDetail(this.reasonTargetId);
+        } else {
+          this.loadHosts();
+          if (this.showHostDetailModal && this.selectedHost?.id === this.reasonTargetId) this.openHostDetail(this.reasonTargetId);
+        }
+        this.loadOverview();
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Action failed')
     });
   }
 
-  get driverTotalPages() { return Math.ceil(this.filteredDrivers.length / this.driverPageSize); }
-  get pagedDrivers() {
-    const start = this.driverPage * this.driverPageSize;
-    return this.filteredDrivers.slice(start, start + this.driverPageSize);
-  }
-  onDriverFilterChange() { this.driverPage = 0; }
+  // ================= BOOKING OPERATIONS =================
 
-  // BOOKING OPERATIONS
-  get filteredBookings() {
-    return this.bookings.filter(b => {
-      // Subtab filtering
-      if (this.bookingSubTab === 'verification' && b.status !== 'VERIFICATION_PENDING') return false;
-      if (this.bookingSubTab === 'assignment' && b.status !== 'DRIVER_ASSIGNMENT_PENDING') return false;
-      if (this.bookingSubTab === 'inspection' && b.status !== 'INSPECTION_PENDING') return false;
-
-      // Input filters
-      const matchId = !this.bookingFilter.id || b.id.toString().includes(this.bookingFilter.id);
-      const matchType = !this.bookingFilter.type || b.bookingType === this.bookingFilter.type;
-      const matchStatus = !this.bookingFilter.status || b.status === this.bookingFilter.status;
-
-      return matchId && matchType && matchStatus;
-    });
+  get filteredBookings(): any[] {
+    if (this.bookingSubTab === 'verification') {
+      return this.bookings.filter(b => b.bookingStatus === 'VERIFICATION_PENDING');
+    }
+    return this.bookings;
   }
 
-  get bookingTotalPages() { return Math.ceil(this.filteredBookings.length / this.bookingPageSize); }
-  get pagedBookings() {
+  get bookingTotalPages(): number { return Math.ceil(this.filteredBookings.length / this.bookingPageSize); }
+  get pagedBookings(): any[] {
     const start = this.bookingPage * this.bookingPageSize;
     return this.filteredBookings.slice(start, start + this.bookingPageSize);
   }
-  onBookingFilterChange() { this.bookingPage = 0; }
 
-  openLicensePopup(booking: Booking) {
+  openBookingDetail(id: number): void {
+    this.adminService.getBookingDetails(id).subscribe({
+      next: (res) => {
+        this.selectedBooking = res;
+        this.showBookingDetailModal = true;
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to load booking details')
+    });
+  }
+
+  openLicensePopup(booking: any): void {
     this.selectedBooking = booking;
+    this.licenseRemarks = '';
     this.showLicensePopup = true;
   }
 
-  closeLicensePopup() {
-    this.showLicensePopup = false;
-    this.selectedBooking = null;
-  }
-
-  processLicenseVerification(approved: boolean) {
+  processLicenseVerification(approved: boolean, resubmissionRequested = false): void {
     if (!this.selectedBooking) return;
-    const action = approved ? 'approve' : 'reject';
-    this.adminService.verifyLicense(this.selectedBooking.id, approved).subscribe({
-      next: () => {
-        this.toastService.showSuccess(`Driving license verification ${action}d`);
-        this.closeLicensePopup();
-        this.loadBookings();
-      },
-      error: (err) => this.toastService.showError(`Failed to ${action} license verification`)
-    });
-  }
-
-  openAssignmentPopup(booking: Booking) {
-    this.selectedBooking = booking;
-    this.selectedDriverIdForAssignment = '';
-    // Filter local drivers available in the pickupCity
-    this.availableDriversForAssignment = this.drivers.filter(
-      d => d.status === 'AVAILABLE' && d.active && d.currentLocation.toLowerCase() === booking.pickupCity.toLowerCase()
-    );
-    this.showAssignmentPopup = true;
-  }
-
-  closeAssignmentPopup() {
-    this.showAssignmentPopup = false;
-    this.selectedBooking = null;
-  }
-
-  submitDriverAssignment() {
-    if (!this.selectedBooking || !this.selectedDriverIdForAssignment) return;
-    const driverId = parseInt(this.selectedDriverIdForAssignment, 10);
-    this.adminService.assignDriver(this.selectedBooking.id, driverId).subscribe({
-      next: () => {
-        this.toastService.showSuccess('Driver assigned to booking successfully');
-        this.closeAssignmentPopup();
-        this.loadBookings();
-      },
-      error: (err) => this.toastService.showError('Failed to assign driver')
-    });
-  }
-
-  processInspectionCompletion(booking: Booking) {
-    if (confirm(`Complete vehicle return inspection for Booking #${booking.id}? This will free the car.`)) {
-      this.adminService.completeInspection(booking.id).subscribe({
-        next: () => {
-          this.toastService.showSuccess('Inspection completed. Car is now available.');
-          this.loadBookings();
-        },
-        error: (err) => this.toastService.showError('Failed to complete inspection')
-      });
+    if (!approved && !this.licenseRemarks.trim()) {
+      this.toastService.showError('Please add remarks when rejecting or requesting resubmission');
+      return;
     }
+    this.adminService.verifyLicense(this.selectedBooking.id, approved, resubmissionRequested, this.licenseRemarks.trim()).subscribe({
+      next: () => {
+        this.toastService.showSuccess('Driving licence verification updated');
+        this.showLicensePopup = false;
+        this.loadBookings();
+        this.loadOverview();
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Verification failed')
+    });
+  }
+
+  // ================= BOOKING ISSUES & ESCALATIONS =================
+
+  openIssueModal(issue: any, mode: 'escalate' | 'resolve'): void {
+    this.selectedIssue = issue;
+    this.issueMode = mode;
+    this.selectedSupportAgentId = issue.assignedSupportAgentId || null;
+    this.issueRemarks = '';
+    this.showIssueModal = true;
+  }
+
+  submitIssueAction(): void {
+    if (!this.selectedIssue) return;
+    if (!this.issueRemarks.trim()) {
+      this.toastService.showError('Please enter remarks or resolution details');
+      return;
+    }
+
+    const req = this.issueMode === 'escalate'
+      ? this.adminService.escalateIssue(this.selectedIssue.id, this.selectedSupportAgentId, this.issueRemarks.trim())
+      : this.adminService.resolveIssue(this.selectedIssue.id, this.issueRemarks.trim(), 'RESOLVED');
+
+    req.subscribe({
+      next: () => {
+        this.toastService.showSuccess(this.issueMode === 'escalate' ? 'Issue escalated to Support Agent' : 'Issue resolved');
+        this.showIssueModal = false;
+        this.loadIssues();
+        this.loadOverview();
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to update issue')
+    });
+  }
+
+  // ================= INSPECTION MANAGEMENT =================
+
+  get inspectionTotalPages(): number { return Math.ceil(this.inspections.length / this.inspectionPageSize); }
+  get pagedInspections(): any[] {
+    const start = this.inspectionPage * this.inspectionPageSize;
+    return this.inspections.slice(start, start + this.inspectionPageSize);
+  }
+
+  openInspectionDetail(id: number): void {
+    this.adminService.getInspectionDetails(id).subscribe({
+      next: (res) => {
+        this.selectedInspection = res;
+        this.showInspectionDetailModal = true;
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to load inspection details')
+    });
+  }
+
+  openEscalateInspection(insp: any): void {
+    this.escalateInspectionId = insp.id;
+    this.inspectionEscalationRemarks = '';
+    this.suspendVehicleOnEscalate = false;
+    this.showEscalateInspectionModal = true;
+  }
+
+  submitInspectionEscalation(): void {
+    if (!this.inspectionEscalationRemarks.trim()) {
+      this.toastService.showError('Please provide escalation remarks');
+      return;
+    }
+    this.adminService.escalateInspection(
+      this.escalateInspectionId,
+      this.inspectionEscalationRemarks.trim(),
+      this.suspendVehicleOnEscalate
+    ).subscribe({
+      next: () => {
+        this.toastService.showSuccess('Inspection escalated');
+        this.showEscalateInspectionModal = false;
+        this.loadInspections();
+        this.loadCars();
+        this.loadOverview();
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to escalate inspection')
+    });
   }
 }

@@ -225,7 +225,7 @@ export class ManageAdmins implements OnInit {
         console.log(err);
 
         this.toastService.showError(
-          `Failed to ${this.actionType} admin`
+          err.error?.message || `Failed to ${this.actionType} admin`
         );
 
         this.showActionPopup = false;

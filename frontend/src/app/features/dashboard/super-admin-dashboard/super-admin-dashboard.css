@@ -114,3 +114,48 @@
 .card.revenue h3 {
   color: var(--accent);
 }
+
+.card.earnings {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(99, 102, 241, 0.15)), var(--bg-card);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.card.earnings h3 {
+  color: #34d399;
+}
+
+.card.warning-card {
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.group-label {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 14px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.sidebar button.logout-btn {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+.sidebar button.logout-btn:hover {
+  background: var(--danger);
+  color: #ffffff;
+}

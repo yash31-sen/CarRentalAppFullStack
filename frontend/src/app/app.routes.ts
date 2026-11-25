@@ -45,6 +45,22 @@ export const routes: Routes = [
     data: { roles: ['USER'] }
   },
   {
+    path: 'host-onboarding',
+    loadComponent: () =>
+      import('./features/host/host-onboarding/host-onboarding')
+        .then(m => m.HostOnboarding),
+    canActivate: [authGuard],
+    data: { roles: ['USER', 'HOST'] }
+  },
+  {
+    path: 'host-dashboard',
+    loadComponent: () =>
+      import('./features/host/host-dashboard/host-dashboard')
+        .then(m => m.HostDashboard),
+    canActivate: [authGuard],
+    data: { roles: ['HOST'] }
+  },
+  {
     path: 'admin-dashboard',
     loadComponent: () =>
       import('./features/dashboard/admin-dashboard/admin-dashboard')
@@ -54,6 +70,14 @@ export const routes: Routes = [
   },
   {
     path: 'super-admin-dashboard',
+    loadComponent: () =>
+      import('./features/dashboard/super-admin-dashboard/super-admin-dashboard')
+        .then(m => m.SuperAdminDashboard),
+    canActivate: [authGuard],
+    data: { roles: ['SUPER_ADMIN'] }
+  },
+  {
+    path: 'super-admin-dashboard/:tab',
     loadComponent: () =>
       import('./features/dashboard/super-admin-dashboard/super-admin-dashboard')
         .then(m => m.SuperAdminDashboard),

@@ -1,0 +1,91 @@
+<div class="manage-staff">
+  <div class="top-bar">
+    <h2>Manage Support Agents</h2>
+    <p class="subtitle">Account management for complaints, disputes, and customer support tickets</p>
+  </div>
+
+  <!-- SCOPE MODAL -->
+  <div class="confirm-box" *ngIf="showScopeModal">
+    <div class="popup">
+      <h3>Assign Support Cities / Scope</h3>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <input type="text" [(ngModel)]="scopeCity" placeholder="Assigned City (e.g. All / Bhopal)" />
+      </div>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <input type="text" [(ngModel)]="scopeValue" placeholder="Support Scope (e.g. Disputes & Refunds)" />
+      </div>
+      <div class="popup-actions">
+        <button class="cancel" (click)="showScopeModal = false">Cancel</button>
+        <button class="confirm" (click)="saveScope()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE FORM -->
+  <div class="card">
+    <h3>Create Support Agent Account</h3>
+    <form [formGroup]="form" (ngSubmit)="createAgent()">
+      <div class="form-grid">
+        <input type="text" placeholder="Full Name" formControlName="name" />
+        <input type="email" placeholder="Email Address" formControlName="email" />
+        <input type="password" placeholder="Initial Password (min 8 chars)" formControlName="password" />
+        <input type="text" placeholder="Assigned City" formControlName="city" />
+        <input type="text" placeholder="Support Scope (Optional)" formControlName="operationalScope" />
+      </div>
+      <button type="submit" [disabled]="loading || form.invalid">
+        {{ loading ? 'Creating...' : 'Create Support Agent' }}
+      </button>
+    </form>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+    <h3>All Support Agents</h3>
+    <div class="filters-grid">
+      <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="currentPage = 0" placeholder="Search Name, Email, City..." />
+      <select [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 0">
+        <option value="">All Statuses</option>
+        <option value="active">Active Only</option>
+        <option value="inactive">Inactive Only</option>
+      </select>
+    </div>
+
+    <p *ngIf="filteredAgents.length === 0" class="empty-state">No Support Agent accounts found.</p>
+
+    <table *ngIf="filteredAgents.length > 0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>City</th>
+          <th>Support Scope</th>
+          <th>Registered</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of pagedAgents">
+          <td>{{ a.id }}</td>
+          <td>{{ a.name }}</td>
+          <td>{{ a.email }}</td>
+          <td>{{ a.city || 'Global' }}</td>
+          <td>{{ a.operationalScope || 'General Support' }}</td>
+          <td>{{ a.createdAt ? (a.createdAt | date:'mediumDate') : '-' }}</td>
+          <td>
+            <span class="status" [ngClass]="a.active ? 'active' : 'inactive'">
+              {{ a.active ? 'ACTIVE' : 'INACTIVE' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="secondary" (click)="openScopeModal(a)">Assign Scope</button>
+            <button [ngClass]="a.active ? 'deactivate' : 'reactivate'" (click)="toggleStatus(a)">
+              {{ a.active ? 'Deactivate' : 'Reactivate' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

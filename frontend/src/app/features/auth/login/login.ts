@@ -72,9 +72,9 @@ export class Login implements OnInit {
     this.authService.googleLogin(response.credential).subscribe({
       next: (res: any) => {
         this.authService.setToken(res.token, res.tokenType, res.refreshToken);
-        const role = this.authService.getRole();
+        const roles = res.roles || this.authService.getRoles();
         this.successMessage = 'Login successful! Redirecting...';
-        this.redirectUser(role);
+        this.router.navigate([this.authService.getPostLoginRoute(roles, res.hostApplicationStatus)]);
       },
       error: (err) => {
         this.errorMessage = err.error?.message || 'Google Login failed';
@@ -91,10 +91,9 @@ export class Login implements OnInit {
     this.authService.login(this.loginForm.value).subscribe({
       next: (res: any) => {
         this.authService.setToken(res.token, res.tokenType, res.refreshToken);
- 
-        const role = this.authService.getRole();
-this.successMessage = 'Login successful! Redirecting...';
-        this.redirectUser(role);
+        const roles = res.roles || this.authService.getRoles();
+        this.successMessage = 'Login successful! Redirecting...';
+        this.router.navigate([this.authService.getPostLoginRoute(roles, res.hostApplicationStatus)]);
       },
       error: (err) => {
         this.errorMessage = err.error?.message || 'Login failed';

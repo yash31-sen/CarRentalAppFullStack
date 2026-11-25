@@ -1,38 +1,26 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 
-import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  FormsModule,
-  Validators
-} from '@angular/forms';
-
-import { SuperAdminService }
-from '../../../core/services/super-admin';
-import { ToastService }
-from '../../../core/services/toast';
+import { SuperAdminService } from '../../../core/services/super-admin';
+import { ToastService } from '../../../core/services/toast';
 import { AppUser, ServiceCity } from '../../../core/models';
 
 @Component({
   selector: 'app-manage-cities',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    FormsModule
-  ],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './manage-cities.html',
   styleUrls: ['./manage-cities.css']
 })
 export class ManageCities implements OnInit {
 
   cityForm!: FormGroup;
-
   cities: ServiceCity[] = [];
-
   admins: AppUser[] = [];
+
+  editMode = false;
+  editingCityId = 0;
 
   // SEARCH FILTERS
   searchCityName = '';
@@ -43,8 +31,8 @@ export class ManageCities implements OnInit {
     return this.cities.filter(city => {
       const matchCityName = !this.searchCityName || city.cityName?.toLowerCase().includes(this.searchCityName.toLowerCase());
       const matchAddress = !this.searchAddress || city.parkingAddress?.toLowerCase().includes(this.searchAddress.toLowerCase());
-      const matchStatus = !this.searchStatus || 
-        (this.searchStatus === 'active' && city.active) || 
+      const matchStatus = !this.searchStatus ||
+        (this.searchStatus === 'active' && city.active) ||
         (this.searchStatus === 'inactive' && !city.active);
       return matchCityName && matchAddress && matchStatus;
     });
@@ -70,114 +58,99 @@ export class ManageCities implements OnInit {
   ) {}
 
   ngOnInit(): void {
-
     this.cityForm = this.fb.group({
-
-      cityName: [
-        '',
-        Validators.required
-      ],
-
-      parkingAddress: [
-        '',
-        Validators.required
-      ],
-
-      parkingContact: [
-        '',
-        Validators.required
-      ],
-
-      oneWayFee: [
-        '',
-        Validators.required
-      ],
-
+      cityName: ['', Validators.required],
+      parkingAddress: ['', Validators.required],
+      parkingContact: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
+      oneWayFee: [500, [Validators.required, Validators.min(0)]],
+      localServiceCharge: [0, [Validators.min(0)]],
+      bookingAvailable: [true],
       adminId: ['']
     });
 
     this.loadCities();
-
     this.loadAdmins();
   }
 
-  // LOAD CITIES
   loadCities() {
-
-    this.service
-      .getCities()
-      .subscribe({
-
-        next: (res) => {
-
-          this.cities = res;
-        },
-
-        error: (err) => {
-
-          console.log(err);
-        }
-      });
+    this.service.getCities().subscribe({
+      next: (res) => this.cities = res,
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to load cities')
+    });
   }
 
-  // LOAD ADMINS
   loadAdmins() {
-
-    this.service
-      .getAdmins()
-      .subscribe({
-
-        next: (res) => {
-
-          this.admins = res;
-        },
-
-        error: (err) => {
-
-          console.log(err);
-        }
-      });
+    this.service.getAdmins().subscribe({
+      next: (res) => this.admins = res,
+      error: () => {}
+    });
   }
 
-  // CREATE CITY
-  createCity() {
-
+  submitCity() {
+    if (this.cityForm.invalid) return;
     this.loading = true;
-
     const payload = {
-
       ...this.cityForm.value,
-
-      adminId:
-        this.cityForm.value.adminId || null
+      adminId: this.cityForm.value.adminId ? Number(this.cityForm.value.adminId) : null
     };
 
-    this.service
-      .createCity(payload)
-      .subscribe({
+    const req = this.editMode
+      ? this.service.updateCity(this.editingCityId, payload)
+      : this.service.createCity(payload);
 
-        next: () => {
+    req.subscribe({
+      next: () => {
+        this.toastService.showSuccess(this.editMode ? 'City updated successfully' : 'City created successfully');
+        this.resetForm();
+        this.loadCities();
+        this.loading = false;
+      },
+      error: (err) => {
+        this.toastService.showError(err.error?.message || 'Failed to save city');
+        this.loading = false;
+      }
+    });
+  }
 
-          this.toastService.showSuccess('City created successfully');
+  editCity(city: ServiceCity) {
+    this.editMode = true;
+    this.editingCityId = city.id;
+    this.cityForm.patchValue({
+      cityName: city.cityName,
+      parkingAddress: city.parkingAddress,
+      parkingContact: city.parkingContact,
+      oneWayFee: city.oneWayFee,
+      localServiceCharge: city.localServiceCharge ?? 0,
+      bookingAvailable: city.bookingAvailable !== false,
+      adminId: city.admin?.id || ''
+    });
+  }
 
-          this.cityForm.reset();
+  resetForm() {
+    this.editMode = false;
+    this.editingCityId = 0;
+    this.cityForm.reset({ oneWayFee: 500, localServiceCharge: 0, bookingAvailable: true, adminId: '' });
+  }
 
-          this.loadCities();
+  toggleCityStatus(city: ServiceCity) {
+    const req = city.active ? this.service.deactivateCity(city.id) : this.service.reactivateCity(city.id);
+    req.subscribe({
+      next: () => {
+        this.toastService.showSuccess(`City ${city.active ? 'deactivated' : 'reactivated'}`);
+        this.loadCities();
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Failed to update city status')
+    });
+  }
 
-          this.loading = false;
-        },
-
-        error: (err) => {
-
-          console.log(err);
-
-          this.toastService.showError(
-            err.error?.message ||
-            'Failed to create city'
-          );
-
-          this.loading = false;
-        }
-      });
+  deleteCity(city: ServiceCity) {
+    if (!confirm(`Delete city "${city.cityName}"?`)) return;
+    this.service.deleteCity(city.id).subscribe({
+      next: () => {
+        this.toastService.showSuccess('City deleted successfully');
+        this.loadCities();
+      },
+      error: (err) => this.toastService.showError(err.error?.message || 'Cannot delete city')
+    });
   }
 }

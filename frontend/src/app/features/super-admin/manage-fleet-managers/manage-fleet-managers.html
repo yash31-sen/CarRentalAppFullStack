@@ -1,0 +1,91 @@
+<div class="manage-staff">
+  <div class="top-bar">
+    <h2>Manage Fleet Managers</h2>
+    <p class="subtitle">Account management for vehicle inspections, maintenance, and operational readiness</p>
+  </div>
+
+  <!-- SCOPE MODAL -->
+  <div class="confirm-box" *ngIf="showScopeModal">
+    <div class="popup">
+      <h3>Assign City & Operational Scope</h3>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <input type="text" [(ngModel)]="scopeCity" placeholder="Assigned City (e.g. Indore)" />
+      </div>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <input type="text" [(ngModel)]="scopeValue" placeholder="Operational Scope (e.g. North Zone / Inspections)" />
+      </div>
+      <div class="popup-actions">
+        <button class="cancel" (click)="showScopeModal = false">Cancel</button>
+        <button class="confirm" (click)="saveScope()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE FORM -->
+  <div class="card">
+    <h3>Create Fleet Manager Account</h3>
+    <form [formGroup]="form" (ngSubmit)="createFleetManager()">
+      <div class="form-grid">
+        <input type="text" placeholder="Full Name" formControlName="name" />
+        <input type="email" placeholder="Email Address" formControlName="email" />
+        <input type="password" placeholder="Initial Password (min 8 chars)" formControlName="password" />
+        <input type="text" placeholder="Assigned City" formControlName="city" />
+        <input type="text" placeholder="Operational Scope (Optional)" formControlName="operationalScope" />
+      </div>
+      <button type="submit" [disabled]="loading || form.invalid">
+        {{ loading ? 'Creating...' : 'Create Fleet Manager' }}
+      </button>
+    </form>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+    <h3>All Fleet Managers</h3>
+    <div class="filters-grid">
+      <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="currentPage = 0" placeholder="Search Name, Email, City..." />
+      <select [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 0">
+        <option value="">All Statuses</option>
+        <option value="active">Active Only</option>
+        <option value="inactive">Inactive Only</option>
+      </select>
+    </div>
+
+    <p *ngIf="filteredManagers.length === 0" class="empty-state">No Fleet Manager accounts found.</p>
+
+    <table *ngIf="filteredManagers.length > 0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>City</th>
+          <th>Operational Scope</th>
+          <th>Registered</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let m of pagedManagers">
+          <td>{{ m.id }}</td>
+          <td>{{ m.name }}</td>
+          <td>{{ m.email }}</td>
+          <td>{{ m.city || 'Unassigned' }}</td>
+          <td>{{ m.operationalScope || 'Standard Fleet Ops' }}</td>
+          <td>{{ m.createdAt ? (m.createdAt | date:'mediumDate') : '-' }}</td>
+          <td>
+            <span class="status" [ngClass]="m.active ? 'active' : 'inactive'">
+              {{ m.active ? 'ACTIVE' : 'INACTIVE' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="secondary" (click)="openScopeModal(m)">Assign Scope</button>
+            <button [ngClass]="m.active ? 'deactivate' : 'reactivate'" (click)="toggleStatus(m)">
+              {{ m.active ? 'Deactivate' : 'Reactivate' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

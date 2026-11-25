@@ -2,236 +2,154 @@
 
   <!-- HEADER -->
   <div class="top-bar">
-
-    <h2>
-      Pricing Management
-    </h2>
-
-  </div>
-<!-- DELETE POPUP -->
-<div
-  class="confirm-box"
-  *ngIf="showDeletePopup">
-
-  <div class="popup">
-
-    <h3>
-      Confirm Delete
-    </h3>
-
-    <p>
-      Are you sure you want to
-      delete this pricing?
+    <h2>Marketplace Pricing & Commission Rules</h2>
+    <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+      Define permitted Host daily rental price bounds and platform commission per vehicle category.
     </p>
-
-    <div class="popup-actions">
-
-      <button
-        class="cancel"
-        (click)="cancelDelete()">
-
-        Cancel
-
-      </button>
-
-      <button
-        class="delete"
-        (click)="confirmDelete()">
-
-        Delete
-
-      </button>
-
-    </div>
-
   </div>
 
-</div>
+  <!-- DELETE POPUP -->
+  <div class="confirm-box" *ngIf="showDeletePopup">
+    <div class="popup">
+      <h3>Confirm Delete</h3>
+      <p>Are you sure you want to delete this pricing configuration?</p>
+      <div class="popup-actions">
+        <button class="cancel" (click)="cancelDelete()">Cancel</button>
+        <button class="delete" (click)="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <!-- FORM -->
   <div class="card">
+    <h3>{{ editMode ? 'Update Category Pricing' : 'Create Category Pricing' }}</h3>
 
-    <h3>
-
-      {{
-        editMode
-        ? 'Update Pricing'
-        : 'Create Pricing'
-      }}
-
-    </h3>
-
-    <form
-      [formGroup]="pricingForm"
-      (ngSubmit)="submitPricing()">
-
+    <form [formGroup]="pricingForm" (ngSubmit)="submitPricing()">
       <div class="form-grid">
+        <div>
+          <label class="field-lbl">Car Category</label>
+          <select formControlName="carClass">
+            <option value="">Select Car Category</option>
+            <option *ngFor="let c of carClasses" [value]="c">{{ c }}</option>
+          </select>
+        </div>
 
-        <!-- CAR CLASS -->
-        <select
-          formControlName="carClass">
+        <div>
+          <label class="field-lbl">Min Daily Price (₹)</label>
+          <input type="number" placeholder="e.g. 1000" formControlName="minPerDayRate" />
+        </div>
 
-          <option value="">
-            Select Car Class
-          </option>
+        <div>
+          <label class="field-lbl">Max Daily Price (₹)</label>
+          <input type="number" placeholder="e.g. 2000" formControlName="maxPerDayRate" />
+        </div>
 
-          <option
-            *ngFor="let c of carClasses"
-            [value]="c">
+        <div>
+          <label class="field-lbl">Suggested Daily Rate (₹)</label>
+          <input type="number" placeholder="e.g. 1500" formControlName="perDayRate" />
+        </div>
 
-            {{ c }}
+        <div>
+          <label class="field-lbl">Commission (%)</label>
+          <input type="number" step="0.5" placeholder="e.g. 20" formControlName="platformCommissionPercent" />
+        </div>
 
-          </option>
+        <div>
+          <label class="field-lbl">Min Platform Fee (₹)</label>
+          <input type="number" placeholder="0" formControlName="minPlatformFee" />
+        </div>
 
-        </select>
+        <div>
+          <label class="field-lbl">Max Platform Fee (₹, optional)</label>
+          <input type="number" placeholder="Optional" formControlName="maxPlatformFee" />
+        </div>
 
-        <!-- BASE FARE -->
-        <input
-          type="number"
-          placeholder="Base Fare"
-          formControlName="baseFare">
+        <div>
+          <label class="field-lbl">Min Duration (Days)</label>
+          <input type="number" placeholder="1" formControlName="minBookingDurationDays" />
+        </div>
 
-        <!-- PER DAY RATE -->
-        <input
-          type="number"
-          placeholder="Per Day Rate"
-          formControlName="perDayRate">
+        <div>
+          <label class="field-lbl">Max Duration (Days)</label>
+          <input type="number" placeholder="30" formControlName="maxBookingDurationDays" />
+        </div>
 
-        <!-- MIN PER DAY -->
-        <input
-          type="number"
-          placeholder="Min Per Day Rate"
-          formControlName="minPerDayRate">
+        <div>
+          <label class="field-lbl">Base Fare (₹)</label>
+          <input type="number" placeholder="0" formControlName="baseFare" />
+        </div>
 
-        <!-- MAX PER DAY -->
-        <input
-          type="number"
-          placeholder="Max Per Day Rate"
-          formControlName="maxPerDayRate">
+        <div>
+          <label class="field-lbl">Free KM / Day</label>
+          <input type="number" placeholder="100" formControlName="freeKmPerDay" />
+        </div>
 
-        <!-- FREE KM -->
-        <input
-          type="number"
-          placeholder="Free KM Per Day"
-          formControlName="freeKmPerDay">
-
-        <!-- EXTRA KM RATE -->
-        <input
-          type="number"
-          placeholder="Extra KM Rate"
-          formControlName="extraKmRate">
-
+        <div>
+          <label class="field-lbl">Extra KM Rate (₹)</label>
+          <input type="number" placeholder="12" formControlName="extraKmRate" />
+        </div>
       </div>
 
       <div class="btn-group">
-
-        <button
-          type="submit"
-          [disabled]="loading || pricingForm.invalid">
-
-          {{
-            loading
-            ? 'Saving...'
-            : editMode
-              ? 'Update Pricing'
-              : 'Create Pricing'
-          }}
-
+        <button type="submit" [disabled]="loading || pricingForm.invalid">
+          {{ loading ? 'Saving...' : editMode ? 'Update Pricing' : 'Create Pricing' }}
         </button>
-
-        <button
-          type="button"
-          class="cancel"
-          *ngIf="editMode"
-          (click)="resetForm()">
-
-          Cancel
-
-        </button>
-
+        <button type="button" class="cancel" *ngIf="editMode" (click)="resetForm()">Cancel</button>
       </div>
-
     </form>
-
   </div>
 
   <!-- TABLE -->
   <div class="card">
+    <h3>Category Pricing Configurations</h3>
 
-    <h3>
-      Pricing List
-    </h3>
-
-    <!-- SEARCH FILTERS -->
     <div class="filters-grid">
       <select [(ngModel)]="searchCarClass" (ngModelChange)="onFilterChange()">
-        <option value="">All Car Classes</option>
+        <option value="">All Car Categories</option>
         <option *ngFor="let c of carClasses" [value]="c">{{ c }}</option>
       </select>
-      <input type="number" [(ngModel)]="searchMaxBaseFare" (ngModelChange)="onFilterChange()" placeholder="Max Base Fare..." />
+      <select [(ngModel)]="searchStatus" (ngModelChange)="onFilterChange()">
+        <option value="">All Statuses</option>
+        <option value="active">Active Only</option>
+        <option value="inactive">Inactive Only</option>
+      </select>
     </div>
 
     <table>
-
       <thead>
-
-      <tr>
-
-        <th>Class</th>
-        <th>Base Fare</th>
-        <th>Per Day</th>
-        <th>Min Day</th>
-        <th>Max Day</th>
-        <th>Free KM</th>
-        <th>Extra KM</th>
-        <th>Actions</th>
-
-      </tr>
-
+        <tr>
+          <th>Car Category</th>
+          <th>Minimum Daily Price</th>
+          <th>Maximum Daily Price</th>
+          <th>Commission %</th>
+          <th>Duration / KM</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
       </thead>
-
       <tbody>
-
-      <tr
-        *ngFor="let p of pagedPricing">
-
-        <td>{{ p.carClass }}</td>
-
-        <td>₹ {{ p.baseFare }}</td>
-
-        <td>₹ {{ p.perDayRate }}</td>
-
-        <td>₹ {{ p.minPerDayRate }}</td>
-
-        <td>₹ {{ p.maxPerDayRate }}</td>
-
-        <td>{{ p.freeKmPerDay }} KM</td>
-
-        <td>₹ {{ p.extraKmRate }}</td>
-
-        <td class="actions">
-
-          <button
-            class="edit"
-            (click)="editPricing(p)">
-
-            Edit
-
-          </button>
-
-          <button
-            class="delete"
-            (click)="deletePricing(p.id)">
-
-            Delete
-
-          </button>
-
-        </td>
-
-      </tr>
-
+        <tr *ngFor="let p of pagedPricing">
+          <td><strong>{{ p.carClass }}</strong></td>
+          <td>₹ {{ p.minPerDayRate }}</td>
+          <td>₹ {{ p.maxPerDayRate }}</td>
+          <td>{{ p.platformCommissionPercent ?? 20 }}%</td>
+          <td>
+            <small>{{ p.minBookingDurationDays || 1 }}-{{ p.maxBookingDurationDays || 30 }}d | {{ p.freeKmPerDay }}km/d</small>
+          </td>
+          <td>
+            <span class="status" [ngClass]="p.active !== false ? 'active' : 'inactive'">
+              {{ p.active !== false ? 'ACTIVE' : 'INACTIVE' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="edit" (click)="editPricing(p)">Edit</button>
+            <button [ngClass]="p.active !== false ? 'deactivate' : 'reactivate'" (click)="togglePricingStatus(p)">
+              {{ p.active !== false ? 'Deactivate' : 'Activate' }}
+            </button>
+            <button class="delete" (click)="deletePricing(p.id)">Delete</button>
+          </td>
+        </tr>
       </tbody>
-
     </table>
 
     <!-- Pagination -->
@@ -239,31 +157,11 @@
       <div class="pagination-info">
         Showing <strong>{{ currentPage * pageSize + 1 }}&ndash;{{ (currentPage + 1) * pageSize < filteredPricing.length ? (currentPage + 1) * pageSize : filteredPricing.length }}</strong> of <strong>{{ filteredPricing.length }}</strong> entries
       </div>
-      <div class="page-size-selector">
-        Rows:
-        <select [(ngModel)]="pageSize" (ngModelChange)="currentPage = 0">
-          <option [value]="5">5</option>
-          <option [value]="10">10</option>
-          <option [value]="25">25</option>
-          <option [value]="50">50</option>
-        </select>
-      </div>
       <div class="pagination-controls">
-        <button class="page-btn" (click)="currentPage = 0" [disabled]="currentPage === 0">«</button>
         <button class="page-btn" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 0">‹</button>
-        <ng-container *ngFor="let p of getPages(totalPages)">
-          <button class="page-btn" [class.active]="p === currentPage" (click)="currentPage = p"
-            *ngIf="p === 0 || p === totalPages - 1 || (p >= currentPage - 1 && p <= currentPage + 1)">
-            {{ p + 1 }}
-          </button>
-          <span class="page-ellipsis"
-            *ngIf="(p === 1 && currentPage > 2) || (p === totalPages - 2 && currentPage < totalPages - 3)">…</span>
-        </ng-container>
-        <button class="page-btn" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages - 1">›</button>
-        <button class="page-btn" (click)="currentPage = totalPages - 1" [disabled]="currentPage === totalPages - 1">»</button>
+        <button class="page-btn" *ngFor="let p of getPages(totalPages)" [class.active]="p === currentPage" (click)="currentPage = p">{{ p + 1 }}</button>
+        <button class="page-btn" (click)="currentPage = currentPage + 1" [disabled]="currentPage >= totalPages - 1">›</button>
       </div>
     </div>
-
   </div>
-
 </div>

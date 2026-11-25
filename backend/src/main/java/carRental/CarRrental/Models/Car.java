@@ -3,6 +3,8 @@ package carRental.CarRrental.Models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "car")
 @Getter
@@ -79,4 +81,61 @@ public class Car {
     private AppUser currentAdmin;       // 👈 NEW
     // admin currently responsible
     // changes after one way trip
+
+    // ── Marketplace Host & Approval fields ──
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "host_id")
+    private HostProfile host;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status")
+    @Builder.Default
+    private CarApprovalStatus approvalStatus = CarApprovalStatus.APPROVED;
+
+    @Column(name = "pricing_out_of_range")
+    @Builder.Default
+    private Boolean pricingOutOfRange = false;
+
+    @Column(name = "manufacturing_year")
+    private Integer manufacturingYear;
+
+    @Column(name = "seating_capacity")
+    private Integer seatingCapacity;
+
+    @Column(length = 1500)
+    private String description;
+
+    @Column(name = "rc_document_url")
+    private String rcDocumentUrl;
+
+    @Column(name = "insurance_document_url")
+    private String insuranceDocumentUrl;
+
+    @Column(name = "puc_document_url")
+    private String pucDocumentUrl;
+
+    @Column(name = "other_document_url")
+    private String otherDocumentUrl;
+
+    @Column(name = "photo_urls", length = 2000)
+    private String photoUrls;
+
+    @Column(name = "admin_remarks", length = 1000)
+    private String adminRemarks;
+
+    @Column(name = "submitted_at")
+    private Instant submittedAt;
+
+    @PrePersist
+    public void onCreate() {
+        if (this.approvalStatus == null) {
+            this.approvalStatus = CarApprovalStatus.APPROVED;
+        }
+        if (this.pricingOutOfRange == null) {
+            this.pricingOutOfRange = false;
+        }
+        if (this.submittedAt == null) {
+            this.submittedAt = Instant.now();
+        }
+    }
 }

@@ -2,55 +2,117 @@
 
   <!-- HEADER -->
   <div class="top-bar">
-
-    <h2>
-      Manage Users
-    </h2>
-
+    <h2>Manage Users</h2>
   </div>
 
-  <!-- POPUP -->
-  <div
-    class="confirm-box"
-    *ngIf="showActionPopup">
-
+  <!-- CONFIRM POPUP -->
+  <div class="confirm-box" *ngIf="showActionPopup">
     <div class="popup">
-
       <h3>Confirm Action</h3>
-
       <p>
-        Are you sure you want to
-        <b>{{ actionType }}</b>
-        this user?
+        Are you sure you want to <b>{{ actionType }}</b> this user?
       </p>
-
       <div class="popup-actions">
+        <button class="cancel" (click)="cancelAction()">Cancel</button>
+        <button class="confirm" (click)="confirmAction()">Confirm</button>
+      </div>
+    </div>
+  </div>
 
-        <button
-          class="cancel"
-          (click)="cancelAction()">
+  <!-- SUSPEND MODAL -->
+  <div class="confirm-box" *ngIf="showSuspendModal">
+    <div class="popup">
+      <h3>Suspend User Account</h3>
+      <textarea rows="3" [(ngModel)]="suspendReason" placeholder="Enter suspension reason..."></textarea>
+      <div class="popup-actions" style="margin-top: 16px;">
+        <button class="cancel" (click)="cancelAction()">Cancel</button>
+        <button class="delete" (click)="confirmSuspend()">Suspend</button>
+      </div>
+    </div>
+  </div>
 
-          Cancel
-
-        </button>
-
-        <button
-          class="confirm"
-          (click)="confirmAction()">
-
-          Confirm
-
-        </button>
-
+  <!-- USER DETAILS MODAL -->
+  <div class="confirm-box" *ngIf="showDetailModal">
+    <div class="popup" style="width: 800px; max-width: 95vw; max-height: 85vh; overflow-y: auto; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3>User 360° Profile</h3>
+        <button class="cancel" (click)="closeDetails()">Close</button>
       </div>
 
-    </div>
+      <div *ngIf="detailLoading" style="padding: 20px; text-align: center;">Loading user details...</div>
 
+      <div *ngIf="!detailLoading && selectedUserDetail">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+          <button class="secondary" [style.background]="detailTab === 'profile' ? 'var(--primary)' : ''" (click)="detailTab = 'profile'">Profile</button>
+          <button class="secondary" [style.background]="detailTab === 'bookings' ? 'var(--primary)' : ''" (click)="detailTab = 'bookings'">Bookings ({{ selectedUserDetail.bookingHistory.length }})</button>
+          <button class="secondary" [style.background]="detailTab === 'payments' ? 'var(--primary)' : ''" (click)="detailTab = 'payments'">Payments ({{ selectedUserDetail.paymentHistory.length }})</button>
+          <button class="secondary" [style.background]="detailTab === 'reviews' ? 'var(--primary)' : ''" (click)="detailTab = 'reviews'">Reviews ({{ selectedUserDetail.reviews.length }})</button>
+          <button class="secondary" [style.background]="detailTab === 'incidents' ? 'var(--primary)' : ''" (click)="detailTab = 'incidents'">Incidents ({{ selectedUserDetail.reportedIncidents.length }})</button>
+        </div>
+
+        <div *ngIf="detailTab === 'profile'" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
+          <p><strong>Name:</strong> {{ selectedUserDetail.name }}</p>
+          <p><strong>Email:</strong> {{ selectedUserDetail.email }}</p>
+          <p><strong>Email Verified:</strong> {{ selectedUserDetail.emailVerified ? 'VERIFIED' : 'PENDING' }}</p>
+          <p><strong>Status:</strong> {{ selectedUserDetail.suspended ? 'SUSPENDED' : selectedUserDetail.active ? 'ACTIVE' : 'INACTIVE' }}</p>
+          <p><strong>Registered:</strong> {{ selectedUserDetail.createdAt ? (selectedUserDetail.createdAt | date:'medium') : '-' }}</p>
+          <p *ngIf="selectedUserDetail.suspensionReason"><strong>Suspension Reason:</strong> {{ selectedUserDetail.suspensionReason }}</p>
+        </div>
+
+        <div *ngIf="detailTab === 'bookings'">
+          <p *ngIf="selectedUserDetail.bookingHistory.length === 0">No bookings recorded.</p>
+          <table *ngIf="selectedUserDetail.bookingHistory.length > 0">
+            <thead><tr><th>ID</th><th>Car</th><th>Dates</th><th>Route</th><th>Amount</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let b of selectedUserDetail.bookingHistory">
+                <td>#{{ b.id }}</td>
+                <td>{{ b.carName }} ({{ b.carNumber }})</td>
+                <td>{{ b.startDate }} → {{ b.endDate }}</td>
+                <td>{{ b.pickupCity }} → {{ b.dropCity }}</td>
+                <td>₹ {{ b.amount }}</td>
+                <td>{{ b.status }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="detailTab === 'payments'">
+          <p *ngIf="selectedUserDetail.paymentHistory.length === 0">No payment transactions recorded.</p>
+          <table *ngIf="selectedUserDetail.paymentHistory.length > 0">
+            <thead><tr><th>Booking</th><th>Ref</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let p of selectedUserDetail.paymentHistory">
+                <td>#{{ p.bookingId }}</td>
+                <td>{{ p.paymentRef }}</td>
+                <td>₹ {{ p.amount }}</td>
+                <td>{{ p.status }}</td>
+                <td>{{ p.paymentAt | date:'short' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="detailTab === 'reviews'">
+          <p *ngIf="selectedUserDetail.reviews.length === 0">No ratings or reviews.</p>
+          <div *ngFor="let r of selectedUserDetail.reviews" style="padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px;">
+            <strong>{{ r.reviewerName }}</strong> — ⭐ {{ r.rating }}/5
+            <p>{{ r.comment }}</p>
+          </div>
+        </div>
+
+        <div *ngIf="detailTab === 'incidents'">
+          <p *ngIf="selectedUserDetail.reportedIncidents.length === 0">No reported incidents.</p>
+          <div *ngFor="let i of selectedUserDetail.reportedIncidents" style="padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px;">
+            <strong>{{ i.title }}</strong> ({{ i.status }}) — by {{ i.reportedByName }}
+            <p>{{ i.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- USERS TABLE -->
   <div class="card">
-
     <h3>All Users</h3>
 
     <!-- SEARCH FILTERS -->
@@ -61,84 +123,48 @@
         <option value="">All Statuses</option>
         <option value="active">Active Only</option>
         <option value="inactive">Inactive Only</option>
+        <option value="suspended">Suspended Only</option>
       </select>
     </div>
 
     <table>
-
       <thead>
-
-      <tr>
-
-        <th>ID</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Status</th>
-        <th>Actions</th>
-
-      </tr>
-
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Verification</th>
+          <th>Registered</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
       </thead>
-
       <tbody>
-
-      <tr *ngFor="let user of pagedUsers">
-
-        <td>{{ user.id }}</td>
-
-        <td>{{ user.name }}</td>
-
-        <td>{{ user.email }}</td>
-
-        <td>
-
-          <span
-            class="status"
-            [ngClass]="user.active ? 'active' : 'inactive'">
-
-            {{ user.active ? 'ACTIVE' : 'INACTIVE' }}
-
-          </span>
-
-        </td>
-
-        <td class="actions">
-
-          <!-- DEACTIVATE -->
-          <button
-            *ngIf="user.active"
-            class="deactivate"
-            (click)="openPopup(user.id, 'deactivate')">
-
-            Deactivate
-
-          </button>
-
-          <!-- REACTIVATE -->
-          <button
-            *ngIf="!user.active"
-            class="reactivate"
-            (click)="openPopup(user.id, 'reactivate')">
-
-            Reactivate
-
-          </button>
-
-          <!-- DELETE -->
-          <button
-            class="delete"
-            (click)="openPopup(user.id, 'delete')">
-
-            Delete
-
-          </button>
-
-        </td>
-
-      </tr>
-
+        <tr *ngFor="let user of pagedUsers">
+          <td>{{ user.id }}</td>
+          <td>{{ user.name }}</td>
+          <td>{{ user.email }}</td>
+          <td>
+            <span class="status" [ngClass]="user.emailVerified ? 'active' : 'pending'">
+              {{ user.emailVerified ? 'VERIFIED' : 'PENDING' }}
+            </span>
+          </td>
+          <td>{{ user.createdAt ? (user.createdAt | date:'mediumDate') : '-' }}</td>
+          <td>
+            <span class="status" [ngClass]="user.suspended ? 'inactive' : user.active ? 'active' : 'inactive'">
+              {{ user.suspended ? 'SUSPENDED' : user.active ? 'ACTIVE' : 'INACTIVE' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="secondary" (click)="openDetails(user.id)">View</button>
+            <button *ngIf="user.active && !user.suspended" class="deactivate" (click)="openPopup(user.id, 'deactivate')">Deactivate</button>
+            <button *ngIf="!user.active && !user.suspended" class="reactivate" (click)="openPopup(user.id, 'reactivate')">Reactivate</button>
+            <button *ngIf="!user.suspended" class="delete" (click)="openPopup(user.id, 'suspend')">Suspend</button>
+            <button *ngIf="user.suspended" class="reactivate" (click)="openPopup(user.id, 'unsuspend')">Unsuspend</button>
+            <button class="delete" (click)="openPopup(user.id, 'delete')">Delete</button>
+          </td>
+        </tr>
       </tbody>
-
     </table>
 
     <!-- Pagination -->
@@ -170,7 +196,5 @@
         <button class="page-btn" (click)="currentPage = totalPages - 1" [disabled]="currentPage === totalPages - 1">»</button>
       </div>
     </div>
-
   </div>
-
 </div>

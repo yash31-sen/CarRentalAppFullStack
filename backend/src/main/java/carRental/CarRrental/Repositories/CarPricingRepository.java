@@ -13,6 +13,12 @@ public interface CarPricingRepository
     // find pricing rule for a car class
     Optional<CarPricing> findByCarClass(CarClass carClass);
 
+    Optional<CarPricing> findFirstByCarClassAndActiveTrue(CarClass carClass);
+
+    boolean existsByCarClassAndActiveTrue(CarClass carClass);
+
+    boolean existsByCarClassAndActiveTrueAndIdNot(CarClass carClass, Long id);
+
     // check if pricing exists for a car class
     boolean existsByCarClass(CarClass carClass);
 

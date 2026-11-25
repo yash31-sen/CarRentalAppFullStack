@@ -3,6 +3,7 @@ package carRental.CarRrental.Models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -85,6 +86,8 @@ public class Booking {
 
     // self drive licence
     private String drivingLicenseNumber;
+    private String licenceDocumentUrl;
+    private String licenceRemarks;
     private Instant licenceSubmittedAt;
     private Instant licenceVerifiedAt;
     private String licenceVerifiedBy;
@@ -152,4 +155,24 @@ public class Booking {
     private double finalPrice;          // estimatedPrice
     // + extraKmCharge
     // updated after trip ends
+
+    // ── Marketplace Commission Snapshot (Immutable per booking) ──
+    @Column(name = "gross_amount", precision = 12, scale = 2)
+    private BigDecimal grossAmount;
+
+    @Column(name = "platform_commission_percent", precision = 5, scale = 2)
+    private BigDecimal platformCommissionPercent;
+
+    @Column(name = "platform_commission_amount", precision = 12, scale = 2)
+    private BigDecimal platformCommissionAmount;
+
+    @Column(name = "platform_fee_amount", precision = 12, scale = 2)
+    private BigDecimal platformFeeAmount;
+
+    @Column(name = "host_earnings_amount", precision = 12, scale = 2)
+    private BigDecimal hostEarningsAmount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "host_payout_status")
+    private PayoutStatus hostPayoutStatus;
 }

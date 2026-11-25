@@ -85,6 +85,18 @@ export class UserDashboard implements OnInit {
     this.loadMyBookings();
   }
 
+  get isHost(): boolean {
+    return this.auth.hasRole('HOST');
+  }
+
+  goToHostExperience() {
+    if (this.isHost) {
+      this.router.navigate(['/host-dashboard']);
+    } else {
+      this.router.navigate(['/host-onboarding']);
+    }
+  }
+
   // ─── DATA LOADERS ────────────────────────────────────────────────────────
 
   loadCars() {

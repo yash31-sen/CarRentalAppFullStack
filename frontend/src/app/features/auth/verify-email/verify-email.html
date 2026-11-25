@@ -1,11 +1,36 @@
-<div style="text-align:center; margin-top:50px;">
- <h2>{{ message }}</h2>
+<div style="max-width:460px; margin:60px auto; padding:28px; background:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.08); text-align:center;">
+  <h2 style="margin-bottom:12px;">{{ message }}</h2>
 
-  <div *ngIf="success">
-    <p>Redirecting...</p>
+  <div *ngIf="loading" style="color:#64748b;">Please wait...</div>
+
+  <div *ngIf="success" style="color:#16a34a; font-weight:600;">
+    <p>Redirecting you to your portal...</p>
   </div>
 
-  <div *ngIf="!success">
-    <a routerLink="/login">Go to Login</a>
+  <div *ngIf="!loading && !success" style="margin-top:20px;">
+    <p style="font-size:14px; color:#475569; margin-bottom:12px;">
+      Need a fresh verification link? Enter your registered email below:
+    </p>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <input
+        type="email"
+        [(ngModel)]="resendEmail"
+        placeholder="you@example.com"
+        style="flex:1; padding:10px; border:1px solid #cbd5e1; border-radius:8px;" />
+      <button
+        type="button"
+        (click)="resendVerification()"
+        [disabled]="resending || !resendEmail"
+        style="padding:10px 14px; border:none; border-radius:8px; background:#2563eb; color:#fff; font-weight:600; cursor:pointer;">
+        {{ resending ? 'Sending...' : 'Resend' }}
+      </button>
+    </div>
+
+    <p *ngIf="resendMessage" style="color:#16a34a; font-size:13px;">{{ resendMessage }}</p>
+    <p *ngIf="resendError" style="color:#dc2626; font-size:13px;">{{ resendError }}</p>
+
+    <div style="margin-top:16px;">
+      <a routerLink="/login" style="color:#2563eb; font-weight:600;">Go to Login</a>
+    </div>
   </div>
 </div>

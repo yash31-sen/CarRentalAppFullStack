@@ -2,59 +2,21 @@
 
   <!-- SIDEBAR -->
   <div class="sidebar">
+    <h2 class="title">Super Admin</h2>
 
-    <h2 class="title">
-      Super Admin
-    </h2>
+    <button [class.active]="activeTab === 'dashboard'" (click)="navigate('dashboard')">Dashboard</button>
+    <button [class.active]="activeTab === 'admins'" (click)="navigate('admins')">Manage Admins</button>
+    <button [class.active]="activeTab === 'users'" (click)="navigate('users')">Manage Users</button>
+    <button [class.active]="activeTab === 'hosts'" (click)="navigate('hosts')">Manage Hosts</button>
+    <button [class.active]="activeTab === 'cities'" (click)="navigate('cities')">Manage Cities</button>
+    <button [class.active]="activeTab === 'pricing'" (click)="navigate('pricing')">Manage Pricing</button>
+    <button [class.active]="activeTab === 'fleet-managers'" (click)="navigate('fleet-managers')">Manage Fleet Managers</button>
+    <button [class.active]="activeTab === 'support-agents'" (click)="navigate('support-agents')">Manage Support Agents</button>
+    <button [class.active]="activeTab === 'settings'" (click)="navigate('settings')">Platform Settings</button>
 
-    <button
-      [class.active]="activeTab === 'dashboard'"
-      (click)="navigate('dashboard')">
-
-      Dashboard
-
-    </button>
-
-    <button
-      [class.active]="activeTab === 'admins'"
-      (click)="navigate('admins')">
-
-      Manage Admins
-
-    </button>
-
-    <button
-      [class.active]="activeTab === 'users'"
-      (click)="navigate('users')">
-
-      Manage Users
-
-    </button>
-
-    <button
-      [class.active]="activeTab === 'drivers'"
-      (click)="navigate('drivers')">
-
-      Manage Drivers
-
-    </button>
-
-    <button
-      [class.active]="activeTab === 'cities'"
-      (click)="navigate('cities')">
-
-      Manage Cities
-
-    </button>
-
-    <button
-      [class.active]="activeTab === 'pricing'"
-      (click)="navigate('pricing')">
-
-      Manage Pricing
-
-    </button>
-
+    <div class="sidebar-footer">
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
   </div>
 
   <!-- MAIN CONTENT -->
@@ -62,128 +24,86 @@
 
     <!-- DASHBOARD -->
     <div *ngIf="activeTab === 'dashboard'">
-
-      <div class="cards">
-
-        <!-- ADMINS -->
-        <div class="card">
-
-          <h3>
-            {{ stats.totalAdmins }}
-          </h3>
-
-          <p>
-            Total Admins
-          </p>
-
-        </div>
-
-        <!-- USERS -->
-        <div class="card">
-
-          <h3>
-            {{ stats.totalUsers }}
-          </h3>
-
-          <p>
-            Total Users
-          </p>
-
-        </div>
-
-        <!-- DRIVERS -->
-        <div class="card">
-
-          <h3>
-            {{ stats.totalDrivers }}
-          </h3>
-
-          <p>
-            Total Drivers
-          </p>
-
-        </div>
-
-        <!-- CITIES -->
-        <div class="card">
-
-          <h3>
-            {{ stats.totalCities }}
-          </h3>
-
-          <p>
-            Total Cities
-          </p>
-
-        </div>
-
-        <!-- CARS -->
-        <div class="card">
-
-          <h3>
-            {{ stats.totalCars }}
-          </h3>
-
-          <p>
-            Total Cars
-          </p>
-
-        </div>
-
-        <!-- BOOKINGS -->
-        <div class="card">
-
-          <h3>
-            {{ stats.totalBookings }}
-          </h3>
-
-          <p>
-            Total Bookings
-          </p>
-
-        </div>
-
-        <!-- REVENUE -->
-        <div class="card revenue">
-
-          <h3>
-            ₹ {{ stats.totalRevenue }}
-          </h3>
-
-          <p>
-            Total Revenue
-          </p>
-
-        </div>
-
+      <div class="section-header">
+        <h2>Marketplace Overview</h2>
+        <button class="secondary" (click)="loadDashboardStats()" [disabled]="loadingStats">
+          {{ loadingStats ? 'Refreshing...' : 'Refresh Metrics' }}
+        </button>
       </div>
 
+      <h4 class="group-label">Primary Marketplace Metrics</h4>
+      <div class="cards">
+        <div class="card">
+          <h3>{{ stats.totalAdmins }}</h3>
+          <p>Total Admins</p>
+        </div>
+        <div class="card">
+          <h3>{{ stats.totalUsers }}</h3>
+          <p>Total Users</p>
+        </div>
+        <div class="card">
+          <h3>{{ stats.totalHosts }}</h3>
+          <p>Total Hosts</p>
+        </div>
+        <div class="card">
+          <h3>{{ stats.totalCities }}</h3>
+          <p>Total Cities</p>
+        </div>
+        <div class="card">
+          <h3>{{ stats.totalListedCars }}</h3>
+          <p>Total Listed Cars</p>
+        </div>
+        <div class="card">
+          <h3>{{ stats.totalBookings }}</h3>
+          <p>Total Bookings</p>
+        </div>
+        <div class="card revenue">
+          <h3>₹ {{ stats.totalRevenue | number:'1.0-2' }}</h3>
+          <p>Total Revenue (Gross Booking Value)</p>
+        </div>
+        <div class="card earnings">
+          <h3>₹ {{ stats.platformEarnings | number:'1.0-2' }}</h3>
+          <p>Platform Earnings (Commission + Fees)</p>
+        </div>
+      </div>
+
+      <h4 class="group-label">Operational & Marketplace Health</h4>
+      <div class="cards">
+        <div class="card warning-card">
+          <h3>{{ stats.pendingHostVerifications }}</h3>
+          <p>Pending Host Verifications</p>
+        </div>
+        <div class="card warning-card">
+          <h3>{{ stats.pendingVehicleApprovals }}</h3>
+          <p>Pending Vehicle Approvals</p>
+        </div>
+        <div class="card">
+          <h3>{{ stats.activeBookings }}</h3>
+          <p>Active Bookings</p>
+        </div>
+        <div class="card">
+          <h3>{{ stats.availableCars }}</h3>
+          <p>Available Cars</p>
+        </div>
+        <div class="card">
+          <h3>{{ stats.unavailableCars }}</h3>
+          <p>Unavailable Cars</p>
+        </div>
+        <div class="card">
+          <h3>{{ stats.pendingHostPayouts }}</h3>
+          <p>Pending Host Payouts (₹ {{ stats.pendingHostPayoutAmount | number:'1.0-2' }})</p>
+        </div>
+      </div>
     </div>
 
-    <!-- MANAGE ADMINS -->
-    <app-manage-admins
-      *ngIf="activeTab === 'admins'">
-    </app-manage-admins>
-
-    <!-- MANAGE USERS -->
-    <app-manage-users
-      *ngIf="activeTab === 'users'">
-    </app-manage-users>
-
-    <!-- MANAGE DRIVERS -->
-    <app-manage-drivers
-      *ngIf="activeTab === 'drivers'">
-    </app-manage-drivers>
-
-    <!-- MANAGE CITIES -->
-    <app-manage-cities
-      *ngIf="activeTab === 'cities'">
-    </app-manage-cities>
-
-    <!-- MANAGE PRICING -->
-    <app-manage-pricing
-      *ngIf="activeTab === 'pricing'">
-    </app-manage-pricing>
+    <app-manage-admins *ngIf="activeTab === 'admins'"></app-manage-admins>
+    <app-manage-users *ngIf="activeTab === 'users'"></app-manage-users>
+    <app-manage-hosts *ngIf="activeTab === 'hosts'"></app-manage-hosts>
+    <app-manage-cities *ngIf="activeTab === 'cities'"></app-manage-cities>
+    <app-manage-pricing *ngIf="activeTab === 'pricing'"></app-manage-pricing>
+    <app-manage-fleet-managers *ngIf="activeTab === 'fleet-managers'"></app-manage-fleet-managers>
+    <app-manage-support-agents *ngIf="activeTab === 'support-agents'"></app-manage-support-agents>
+    <app-platform-settings *ngIf="activeTab === 'settings'"></app-platform-settings>
 
   </div>
 

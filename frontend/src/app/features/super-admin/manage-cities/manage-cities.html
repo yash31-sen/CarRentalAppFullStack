@@ -2,92 +2,47 @@
 
   <!-- HEADER -->
   <div class="top-bar">
-
-    <h2>
-      Manage Cities
-    </h2>
-
+    <h2>Manage Cities</h2>
   </div>
 
-  <!-- CREATE CITY -->
+  <!-- CREATE / EDIT CITY -->
   <div class="card">
+    <h3>{{ editMode ? 'Edit City' : 'Add City' }}</h3>
 
-    <h3>
-      Add City
-    </h3>
-
-    <form
-      [formGroup]="cityForm"
-      (ngSubmit)="createCity()">
-
+    <form [formGroup]="cityForm" (ngSubmit)="submitCity()">
       <div class="form-grid">
+        <input type="text" placeholder="City Name" formControlName="cityName" />
+        <input type="text" placeholder="Operational / Parking Address" formControlName="parkingAddress" />
+        <input type="text" placeholder="Contact (10 digits)" formControlName="parkingContact" />
+        <input type="number" placeholder="One-Way Fee (₹)" formControlName="oneWayFee" />
+        <input type="number" placeholder="Local Service Charge (₹)" formControlName="localServiceCharge" />
 
-        <!-- CITY NAME -->
-        <input
-          type="text"
-          placeholder="City Name"
-          formControlName="cityName">
-
-        <!-- PARKING ADDRESS -->
-        <input
-          type="text"
-          placeholder="Parking Address"
-          formControlName="parkingAddress">
-
-        <!-- CONTACT -->
-        <input
-          type="text"
-          placeholder="Parking Contact"
-          formControlName="parkingContact">
-
-        <!-- ONE WAY FEE -->
-        <input
-          type="number"
-          placeholder="One Way Fee"
-          formControlName="oneWayFee">
-
-        <!-- ADMIN -->
-        <select
-          formControlName="adminId">
-
-          <option value="">
-            Select Admin (Optional)
-          </option>
-
-          <option
-            *ngFor="let admin of admins"
-            [value]="admin.id">
-
-            {{ admin.name }}
-            -
-            {{ admin.city }}
-
-          </option>
-
+        <select formControlName="bookingAvailable">
+          <option [ngValue]="true">Bookings: Open</option>
+          <option [ngValue]="false">Bookings: Paused</option>
         </select>
 
+        <select formControlName="adminId">
+          <option value="">Select Admin (Optional)</option>
+          <option *ngFor="let admin of admins" [value]="admin.id">
+            {{ admin.name }} - {{ admin.city }}
+          </option>
+        </select>
       </div>
 
-      <button
-        type="submit"
-        [disabled]="loading || cityForm.invalid">
-
-        {{ loading ? 'Creating...' : 'Create City' }}
-
-      </button>
-
+      <div style="display: flex; gap: 10px;">
+        <button type="submit" [disabled]="loading || cityForm.invalid">
+          {{ loading ? 'Saving...' : editMode ? 'Update City' : 'Create City' }}
+        </button>
+        <button type="button" class="cancel" *ngIf="editMode" (click)="resetForm()">Cancel</button>
+      </div>
     </form>
-
   </div>
 
   <!-- CITIES TABLE -->
   <div class="card">
+    <h3>All Service Cities</h3>
 
-    <h3>
-      All Cities
-    </h3>
-
-    <!-- SEARCH FILTERS -->
     <div class="filters-grid">
       <input type="text" [(ngModel)]="searchCityName" (ngModelChange)="onFilterChange()" placeholder="Filter by City Name..." />
       <input type="text" [(ngModel)]="searchAddress" (ngModelChange)="onFilterChange()" placeholder="Filter by Address..." />
@@ -99,66 +54,47 @@
     </div>
 
     <table>
-
       <thead>
-
-      <tr>
-
-        <th>ID</th>
-        <th>City</th>
-        <th>Parking Address</th>
-        <th>Contact</th>
-        <th>One Way Fee</th>
-        <th>Admin</th>
-        <th>Status</th>
-
-      </tr>
-
+        <tr>
+          <th>City</th>
+          <th>Address & Contact</th>
+          <th>Admin</th>
+          <th>Hosts / Cars / Active Trips</th>
+          <th>Fees (One-Way / Local)</th>
+          <th>Availability</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
       </thead>
-
       <tbody>
-
-      <tr *ngFor="let city of pagedCities">
-
-        <td>{{ city.id }}</td>
-
-        <td>{{ city.cityName }}</td>
-
-        <td>{{ city.parkingAddress }}</td>
-
-        <td>{{ city.parkingContact }}</td>
-
-        <td>₹ {{ city.oneWayFee }}</td>
-
-        <td>
-
-          {{
-            city.admin?.name ||
-            'Not Assigned'
-          }}
-
-        </td>
-
-        <td>
-
-          <span
-            class="status"
-            [ngClass]="city.active ? 'active' : 'inactive'">
-
-            {{
-              city.active
-              ? 'ACTIVE'
-              : 'INACTIVE'
-            }}
-
-          </span>
-
-        </td>
-
-      </tr>
-
+        <tr *ngFor="let city of pagedCities">
+          <td><strong>{{ city.cityName }}</strong></td>
+          <td>
+            <div>{{ city.parkingAddress }}</div>
+            <small>{{ city.parkingContact }}</small>
+          </td>
+          <td>{{ city.admin?.name || 'Not Assigned' }}</td>
+          <td>{{ city.hostCount || 0 }} / {{ city.vehicleCount || 0 }} / {{ city.activeBookingCount || 0 }}</td>
+          <td>₹ {{ city.oneWayFee }} / ₹ {{ city.localServiceCharge || 0 }}</td>
+          <td>
+            <span class="status" [ngClass]="city.bookingAvailable !== false ? 'active' : 'pending'">
+              {{ city.bookingAvailable !== false ? 'OPEN' : 'PAUSED' }}
+            </span>
+          </td>
+          <td>
+            <span class="status" [ngClass]="city.active ? 'active' : 'inactive'">
+              {{ city.active ? 'ACTIVE' : 'INACTIVE' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="secondary" (click)="editCity(city)">Edit</button>
+            <button [ngClass]="city.active ? 'deactivate' : 'reactivate'" (click)="toggleCityStatus(city)">
+              {{ city.active ? 'Deactivate' : 'Activate' }}
+            </button>
+            <button class="delete" (click)="deleteCity(city)">Delete</button>
+          </td>
+        </tr>
       </tbody>
-
     </table>
 
     <!-- Pagination -->
@@ -166,31 +102,11 @@
       <div class="pagination-info">
         Showing <strong>{{ currentPage * pageSize + 1 }}&ndash;{{ (currentPage + 1) * pageSize < filteredCities.length ? (currentPage + 1) * pageSize : filteredCities.length }}</strong> of <strong>{{ filteredCities.length }}</strong> cities
       </div>
-      <div class="page-size-selector">
-        Rows:
-        <select [(ngModel)]="pageSize" (ngModelChange)="currentPage = 0">
-          <option [value]="5">5</option>
-          <option [value]="10">10</option>
-          <option [value]="25">25</option>
-          <option [value]="50">50</option>
-        </select>
-      </div>
       <div class="pagination-controls">
-        <button class="page-btn" (click)="currentPage = 0" [disabled]="currentPage === 0">«</button>
         <button class="page-btn" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 0">‹</button>
-        <ng-container *ngFor="let p of getPages(totalPages)">
-          <button class="page-btn" [class.active]="p === currentPage" (click)="currentPage = p"
-            *ngIf="p === 0 || p === totalPages - 1 || (p >= currentPage - 1 && p <= currentPage + 1)">
-            {{ p + 1 }}
-          </button>
-          <span class="page-ellipsis"
-            *ngIf="(p === 1 && currentPage > 2) || (p === totalPages - 2 && currentPage < totalPages - 3)">…</span>
-        </ng-container>
-        <button class="page-btn" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages - 1">›</button>
-        <button class="page-btn" (click)="currentPage = totalPages - 1" [disabled]="currentPage === totalPages - 1">»</button>
+        <button class="page-btn" *ngFor="let p of getPages(totalPages)" [class.active]="p === currentPage" (click)="currentPage = p">{{ p + 1 }}</button>
+        <button class="page-btn" (click)="currentPage = currentPage + 1" [disabled]="currentPage >= totalPages - 1">›</button>
       </div>
     </div>
-
   </div>
-
 </div>

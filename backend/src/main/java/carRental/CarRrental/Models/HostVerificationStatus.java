@@ -1,0 +1,15 @@
+package carRental.CarRrental.Models;
+
+public enum HostVerificationStatus {
+    DRAFT,
+    PENDING_EMAIL_VERIFICATION,
+    PENDING_DOCUMENTS,
+    PENDING_ADMIN_APPROVAL,
+    PENDING,
+    VERIFIED,
+    APPROVED,
+    REJECTED,
+    RESUBMISSION_REQUIRED,
+    RESUBMISSION_REQUESTED,
+    SUSPENDED
+}

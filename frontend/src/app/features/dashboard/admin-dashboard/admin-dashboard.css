@@ -838,3 +838,21 @@
     transform: translateY(0);
   }
 }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.detail-grid p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.status-badge.pending { background: var(--warning-light); color: var(--warning); }
+.status-badge.approved, .status-badge.verified { background: var(--accent-light); color: var(--accent); }
+.status-badge.resubmission_requested, .status-badge.resubmission_required { background: var(--warning-light); color: var(--warning); }
+.status-badge.suspended { background: var(--danger-light); color: var(--danger); }
+.alert-icon.danger { background: var(--danger-light); color: var(--danger); }

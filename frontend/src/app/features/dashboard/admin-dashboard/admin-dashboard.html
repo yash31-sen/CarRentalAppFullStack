@@ -3,17 +3,18 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="logo">
-        <span class="highlight">Car</span>Rental
+        <span class="highlight">Zoom</span>Market
       </div>
-      <p class="role-badge">ADMIN PORTAL</p>
+      <p class="role-badge">{{ adminRole }} PORTAL</p>
     </div>
-    
+
     <div class="user-profile">
-      <div class="avatar">AD</div>
+      <div class="avatar">{{ adminName.slice(0, 2).toUpperCase() }}</div>
       <div class="profile-info">
-        <span class="user-name">Administrator</span>
+        <span class="user-name">{{ adminName }}</span>
         <span class="user-email">{{ adminEmail }}</span>
-        <span class="user-city" *ngIf="adminCity">📍 {{ adminCity }}</span>
+        <span class="user-city" *ngIf="assignedCities.length > 0">📍 {{ assignedCities.join(', ') }}</span>
+        <span class="user-city text-danger" *ngIf="assignedCities.length === 0">⚠️ No City Assigned</span>
       </div>
     </div>
 
@@ -22,13 +23,16 @@
         <span class="icon">📊</span> Overview
       </button>
       <button class="nav-item" [class.active]="activeTab === 'cars'" (click)="switchTab('cars')">
-        <span class="icon">🚗</span> Fleet Inventory
+        <span class="icon">🚗</span> Vehicle Listings
       </button>
-      <button class="nav-item" [class.active]="activeTab === 'drivers'" (click)="switchTab('drivers')">
-        <span class="icon">👤</span> Drivers List
+      <button class="nav-item" [class.active]="activeTab === 'hosts'" (click)="switchTab('hosts')">
+        <span class="icon">🤝</span> Host Management
       </button>
       <button class="nav-item" [class.active]="activeTab === 'bookings'" (click)="switchTab('bookings')">
         <span class="icon">📋</span> Booking Operations
+      </button>
+      <button class="nav-item" [class.active]="activeTab === 'inspections'" (click)="switchTab('inspections')">
+        <span class="icon">🔍</span> Inspection Management
       </button>
     </nav>
 
@@ -42,19 +46,46 @@
   <!-- MAIN CONTENT AREA -->
   <main class="main-content">
     <header class="content-header">
-      <h1>Admin Control Panel</h1>
-      <span class="date">{{ adminCity }} City Inventory</span>
+      <div>
+        <h1>City Marketplace Operations</h1>
+        <small style="color: var(--text-muted);">Host-only, self-drive marketplace operations</small>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <select *ngIf="assignedCities.length > 1" [(ngModel)]="selectedCity" (ngModelChange)="onCityFilterChange()" style="width: 180px;">
+          <option value="">All Assigned Cities</option>
+          <option *ngFor="let c of assignedCities" [value]="c">{{ c }}</option>
+        </select>
+        <span class="date" *ngIf="assignedCities.length > 0">
+          📍 {{ selectedCity || assignedCities.join(', ') }}
+        </span>
+      </div>
     </header>
 
     <!-- 1. OVERVIEW TAB -->
     <div class="tab-content" *ngIf="activeTab === 'dashboard'">
       <div class="stats-grid">
+        <div class="stat-card purple" (click)="switchTab('hosts')">
+          <div class="stat-icon">🤝</div>
+          <div class="stat-details">
+            <h3>Total Hosts</h3>
+            <p class="value">{{ stats.totalHosts }}</p>
+            <p class="sub-text">{{ stats.verifiedHosts }} Verified · {{ stats.pendingHostApprovals }} Pending</p>
+          </div>
+        </div>
         <div class="stat-card blue" (click)="switchTab('cars')">
           <div class="stat-icon">🚗</div>
           <div class="stat-details">
-            <h3>Total Fleet</h3>
-            <p class="value">{{ stats.totalCars }}</p>
-            <p class="sub-text">{{ stats.availableCars }} Available</p>
+            <h3>Listed Vehicles</h3>
+            <p class="value">{{ stats.totalListedVehicles }}</p>
+            <p class="sub-text">{{ stats.availableVehicles }} Available · {{ stats.bookedVehicles }} Booked</p>
+          </div>
+        </div>
+        <div class="stat-card orange" (click)="switchTab('cars')">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-details">
+            <h3>Pending Approvals</h3>
+            <p class="value">{{ stats.pendingVehicleApprovals }}</p>
+            <p class="sub-text">Host vehicles awaiting review</p>
           </div>
         </div>
         <div class="stat-card green" (click)="switchTab('bookings')">
@@ -62,591 +93,663 @@
           <div class="stat-details">
             <h3>Active Bookings</h3>
             <p class="value">{{ stats.activeBookings }}</p>
-            <p class="sub-text">In progress / Confirmed</p>
+            <p class="sub-text">{{ stats.pendingLicenceVerifications }} Licence checks pending</p>
           </div>
         </div>
-        <div class="stat-card purple" (click)="switchTab('drivers')">
-          <div class="stat-icon">👤</div>
+        <div class="stat-card orange" (click)="switchTab('inspections')">
+          <div class="stat-icon">🔍</div>
           <div class="stat-details">
-            <h3>Drivers</h3>
-            <p class="value">{{ stats.totalDrivers }}</p>
-            <p class="sub-text">{{ stats.availableDrivers }} Available</p>
-          </div>
-        </div>
-        <div class="stat-card orange" (click)="switchTab('bookings')">
-          <div class="stat-icon">🔔</div>
-          <div class="stat-details">
-            <h3>Task Queue</h3>
-            <p class="value">{{ stats.pendingVerifications + stats.pendingAssignments + stats.pendingInspections }}</p>
-            <p class="sub-text">Pending actions</p>
+            <h3>Pending Inspections</h3>
+            <p class="value">{{ stats.pendingInspections }}</p>
+            <p class="sub-text">Fleet Manager queue</p>
           </div>
         </div>
       </div>
 
-      <!-- Quick Action List -->
+      <!-- Critical Action Items -->
       <div class="section-row">
         <div class="card full-width">
           <div class="card-header">
             <h2>Critical Action Items</h2>
-            <span class="badge" *ngIf="stats.pendingVerifications + stats.pendingAssignments + stats.pendingInspections > 0">Needs Attention</span>
+            <span class="badge" *ngIf="actionItems.length > 0">{{ actionItems.length }} Pending</span>
           </div>
           <div class="action-items-list">
-            <!-- No Actions -->
-            <div class="empty-state" *ngIf="stats.pendingVerifications === 0 && stats.pendingAssignments === 0 && stats.pendingInspections === 0">
+            <div class="empty-state" *ngIf="actionItems.length === 0">
               <span class="icon">✨</span>
-              <p>Everything is up to date! No critical tasks pending.</p>
-            </div>
-            
-            <!-- License Verification -->
-            <div class="action-item" *ngIf="stats.pendingVerifications > 0">
-              <span class="alert-icon warning">📝</span>
-              <div class="action-desc">
-                <h4>Driving License Verification Needed</h4>
-                <p>There are {{ stats.pendingVerifications }} self-drive bookings awaiting license validation.</p>
-              </div>
-              <button class="action-btn" (click)="switchTab('bookings'); switchBookingSubTab('verification')">Review Requests</button>
+              <p>Everything is up to date in your assigned city! No pending action items.</p>
             </div>
 
-            <!-- Driver Assignment -->
-            <div class="action-item" *ngIf="stats.pendingAssignments > 0">
-              <span class="alert-icon info">👤</span>
+            <div class="action-item" *ngFor="let item of actionItems">
+              <span class="alert-icon" [ngClass]="item.severity">🔔</span>
               <div class="action-desc">
-                <h4>Manual Driver Assignment Needed</h4>
-                <p>There are {{ stats.pendingAssignments }} driver-requested bookings that require driver allocation.</p>
+                <h4>{{ item.title }} ({{ item.count }})</h4>
+                <p>{{ item.description }}</p>
               </div>
-              <button class="action-btn" (click)="switchTab('bookings'); switchBookingSubTab('assignment')">Assign Drivers</button>
-            </div>
-
-            <!-- Car Inspection -->
-            <div class="action-item" *ngIf="stats.pendingInspections > 0">
-              <span class="alert-icon success">🔧</span>
-              <div class="action-desc">
-                <h4>Vehicle Return Inspections Pending</h4>
-                <p>There are {{ stats.pendingInspections }} completed trips waiting for return checklists to free cars.</p>
-              </div>
-              <button class="action-btn" (click)="switchTab('bookings'); switchBookingSubTab('inspection')">Inspect Vehicles</button>
+              <button class="action-btn" (click)="navigateActionItem(item)">Review</button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 2. FLEET MANAGEMENT TAB -->
+    <!-- 2. VEHICLE LISTINGS TAB -->
     <div class="tab-content" *ngIf="activeTab === 'cars'">
       <div class="section-header">
-        <div class="search-bar">
-          <input type="text" [(ngModel)]="carFilter.query" (ngModelChange)="onCarFilterChange()" placeholder="Search brand, model, license plate..." />
-          <select [(ngModel)]="carFilter.status" (ngModelChange)="onCarFilterChange()">
-            <option value="">All Statuses</option>
+        <div class="search-bar" style="max-width: 100%; flex-wrap: wrap;">
+          <input type="text" [(ngModel)]="carFilter.search" (keyup.enter)="loadCars()" placeholder="Search plate, model, host name..." />
+          <select [(ngModel)]="carFilter.approvalStatus" (ngModelChange)="loadCars()">
+            <option value="">All Approvals</option>
+            <option value="PENDING">PENDING</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="REJECTED">REJECTED</option>
+            <option value="RESUBMISSION_REQUESTED">RESUBMISSION REQUESTED</option>
+          </select>
+          <select [(ngModel)]="carFilter.status" (ngModelChange)="loadCars()">
+            <option value="">All Operational Statuses</option>
             <option value="AVAILABLE">AVAILABLE</option>
             <option value="BOOKED">BOOKED</option>
-            <option value="PENDING_INSPECTION">PENDING INSPECTION</option>
             <option value="MAINTENANCE">MAINTENANCE</option>
+            <option value="SUSPENDED">SUSPENDED</option>
             <option value="DISABLED">DISABLED</option>
           </select>
-        </div>
-        <button class="btn btn-primary" (click)="openAddCarModal()">➕ Add New Vehicle</button>
-      </div>
-
-      <div class="card table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Vehicle Number</th>
-              <th>Brand & Model</th>
-              <th>Class</th>
-              <th>Specs</th>
-              <th>Rate / Day</th>
-              <th>Location</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let car of pagedCars" [class.disabled-row]="!car.active">
-              <td>{{ car.id }}</td>
-              <td class="font-bold">{{ car.carNumber }}</td>
-              <td>{{ car.brand }} {{ car.model }}</td>
-              <td><span class="badge class">{{ car.carClass }}</span></td>
-              <td>
-                <div class="spec-tags">
-                  <span class="tag">{{ car.fuelType }}</span>
-                  <span class="tag">{{ car.transmission }}</span>
-                </div>
-              </td>
-              <td>₹{{ car.pricePerDay }}</td>
-              <td>{{ car.currentLocation }} ({{ car.currentCity }})</td>
-              <td>
-                <span class="status-badge" [ngClass]="car.status.toLowerCase()">
-                  {{ car.status }}
-                </span>
-              </td>
-              <td>
-                <div class="btn-group">
-                  <button class="btn btn-sm btn-edit" (click)="openEditCarModal(car)">✏️ Edit</button>
-                  <button class="btn btn-sm" [ngClass]="car.active ? 'btn-danger' : 'btn-success'" (click)="toggleCarStatus(car)">
-                    {{ car.active ? 'Disable' : 'Enable' }}
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="pagedCars.length === 0">
-              <td colspan="9" class="text-center">No vehicles found matching the filters.</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Cars Pagination -->
-        <div class="pagination-bar" *ngIf="filteredCars.length > 0">
-          <div class="pagination-info">
-            Showing <strong>{{ carPage * carPageSize + 1 }}&ndash;{{ (carPage + 1) * carPageSize < filteredCars.length ? (carPage + 1) * carPageSize : filteredCars.length }}</strong> of <strong>{{ filteredCars.length }}</strong> vehicles
-          </div>
-          <div class="page-size-selector">
-            Rows:
-            <select [(ngModel)]="carPageSize" (ngModelChange)="carPage = 0">
-              <option [value]="5">5</option>
-              <option [value]="10">10</option>
-              <option [value]="25">25</option>
-              <option [value]="50">50</option>
-            </select>
-          </div>
-          <div class="pagination-controls">
-            <button class="page-btn" (click)="carPage = 0" [disabled]="carPage === 0">«</button>
-            <button class="page-btn" (click)="carPage = carPage - 1" [disabled]="carPage === 0">‹</button>
-            <ng-container *ngFor="let p of getPages(carTotalPages)">
-              <button class="page-btn" [class.active]="p === carPage" (click)="carPage = p"
-                *ngIf="p === 0 || p === carTotalPages - 1 || (p >= carPage - 1 && p <= carPage + 1)">
-                {{ p + 1 }}
-              </button>
-              <span class="page-ellipsis"
-                *ngIf="(p === 1 && carPage > 2) || (p === carTotalPages - 2 && carPage < carTotalPages - 3)">…</span>
-            </ng-container>
-            <button class="page-btn" (click)="carPage = carPage + 1" [disabled]="carPage === carTotalPages - 1">›</button>
-            <button class="page-btn" (click)="carPage = carTotalPages - 1" [disabled]="carPage === carTotalPages - 1">»</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. DRIVER MANAGEMENT TAB -->
-    <div class="tab-content" *ngIf="activeTab === 'drivers'">
-      <div class="section-header">
-        <div class="search-bar">
-          <input type="text" [(ngModel)]="driverFilter.name" (ngModelChange)="onDriverFilterChange()" placeholder="Search driver name, email..." />
-          <select [(ngModel)]="driverFilter.status" (ngModelChange)="onDriverFilterChange()">
-            <option value="">All Statuses</option>
-            <option value="AVAILABLE">AVAILABLE</option>
-            <option value="BUSY">BUSY</option>
-            <option value="OFFLINE">OFFLINE</option>
-          </select>
-        </div>
-        <button class="btn btn-primary" (click)="openAddDriverModal()">➕ Register Driver</button>
-      </div>
-
-      <div class="card table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>License No.</th>
-              <th>Experience</th>
-              <th>Current City</th>
-              <th>Status</th>
-              <th>Active</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let driver of pagedDrivers" [class.disabled-row]="!driver.active">
-              <td>{{ driver.id }}</td>
-              <td class="font-bold">{{ driver.user.name }}</td>
-              <td>{{ driver.user.email }}</td>
-              <td>{{ driver.licenseNumber }}</td>
-              <td>{{ driver.experienceYears }} Yrs</td>
-              <td>{{ driver.currentLocation }}</td>
-              <td>
-                <span class="status-badge" [ngClass]="driver.status.toLowerCase()">
-                  {{ driver.status }}
-                </span>
-              </td>
-              <td>
-                <span class="active-dot" [class.active]="driver.active"></span>
-                {{ driver.active ? 'Active' : 'Inactive' }}
-              </td>
-              <td>
-                <button class="btn btn-sm" [ngClass]="driver.active ? 'btn-danger' : 'btn-success'" (click)="toggleDriverStatus(driver)">
-                  {{ driver.active ? 'Disable' : 'Enable' }}
-                </button>
-              </td>
-            </tr>
-            <tr *ngIf="pagedDrivers.length === 0">
-              <td colspan="9" class="text-center">No drivers found matching the filters.</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Drivers Pagination -->
-        <div class="pagination-bar" *ngIf="filteredDrivers.length > 0">
-          <div class="pagination-info">
-            Showing <strong>{{ driverPage * driverPageSize + 1 }}&ndash;{{ (driverPage + 1) * driverPageSize < filteredDrivers.length ? (driverPage + 1) * driverPageSize : filteredDrivers.length }}</strong> of <strong>{{ filteredDrivers.length }}</strong> drivers
-          </div>
-          <div class="page-size-selector">
-            Rows:
-            <select [(ngModel)]="driverPageSize" (ngModelChange)="driverPage = 0">
-              <option [value]="5">5</option>
-              <option [value]="10">10</option>
-              <option [value]="25">25</option>
-              <option [value]="50">50</option>
-            </select>
-          </div>
-          <div class="pagination-controls">
-            <button class="page-btn" (click)="driverPage = 0" [disabled]="driverPage === 0">«</button>
-            <button class="page-btn" (click)="driverPage = driverPage - 1" [disabled]="driverPage === 0">‹</button>
-            <ng-container *ngFor="let p of getPages(driverTotalPages)">
-              <button class="page-btn" [class.active]="p === driverPage" (click)="driverPage = p"
-                *ngIf="p === 0 || p === driverTotalPages - 1 || (p >= driverPage - 1 && p <= driverPage + 1)">
-                {{ p + 1 }}
-              </button>
-              <span class="page-ellipsis"
-                *ngIf="(p === 1 && driverPage > 2) || (p === driverTotalPages - 2 && driverPage < driverTotalPages - 3)">…</span>
-            </ng-container>
-            <button class="page-btn" (click)="driverPage = driverPage + 1" [disabled]="driverPage === driverTotalPages - 1">›</button>
-            <button class="page-btn" (click)="driverPage = driverTotalPages - 1" [disabled]="driverPage === driverTotalPages - 1">»</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. BOOKINGS MANAGEMENT TAB -->
-    <div class="tab-content" *ngIf="activeTab === 'bookings'">
-      <!-- SUB-TABS -->
-      <div class="sub-tab-bar">
-        <button class="sub-tab" [class.active]="bookingSubTab === 'all'" (click)="switchBookingSubTab('all')">
-          All Bookings
-        </button>
-        <button class="sub-tab" [class.active]="bookingSubTab === 'verification'" (click)="switchBookingSubTab('verification')">
-          License Verification <span class="tab-badge warning" *ngIf="stats.pendingVerifications > 0">{{ stats.pendingVerifications }}</span>
-        </button>
-        <button class="sub-tab" [class.active]="bookingSubTab === 'assignment'" (click)="switchBookingSubTab('assignment')">
-          Driver Assignment <span class="tab-badge info" *ngIf="stats.pendingAssignments > 0">{{ stats.pendingAssignments }}</span>
-        </button>
-        <button class="sub-tab" [class.active]="bookingSubTab === 'inspection'" (click)="switchBookingSubTab('inspection')">
-          Vehicle Inspections <span class="tab-badge success" *ngIf="stats.pendingInspections > 0">{{ stats.pendingInspections }}</span>
-        </button>
-      </div>
-
-      <!-- FILTERS -->
-      <div class="filters-row" *ngIf="bookingSubTab === 'all'">
-        <input type="text" [(ngModel)]="bookingFilter.id" (ngModelChange)="onBookingFilterChange()" placeholder="Filter by Booking ID..." />
-        <select [(ngModel)]="bookingFilter.type" (ngModelChange)="onBookingFilterChange()">
-          <option value="">All Types</option>
-          <option value="SELF_DRIVE">SELF_DRIVE</option>
-          <option value="WITH_DRIVER">WITH_DRIVER</option>
-        </select>
-        <select [(ngModel)]="bookingFilter.status" (ngModelChange)="onBookingFilterChange()">
-          <option value="">All Statuses</option>
-          <option value="PENDING_PAYMENT">PENDING_PAYMENT</option>
-          <option value="PAYMENT_SUCCESS">PAYMENT_SUCCESS</option>
-          <option value="VERIFICATION_PENDING">VERIFICATION_PENDING</option>
-          <option value="DRIVER_ASSIGNMENT_PENDING">DRIVER_ASSIGNMENT_PENDING</option>
-          <option value="CONFIRMED">CONFIRMED</option>
-          <option value="IN_PROGRESS">IN_PROGRESS</option>
-          <option value="INSPECTION_PENDING">INSPECTION_PENDING</option>
-          <option value="COMPLETED">COMPLETED</option>
-          <option value="REJECTED">REJECTED</option>
-          <option value="CANCELLED">CANCELLED</option>
-        </select>
-      </div>
-
-      <div class="card table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Customer</th>
-              <th>Vehicle</th>
-              <th>Type</th>
-              <th>Dates</th>
-              <th>Route</th>
-              <th>Total Price</th>
-              <th>Status</th>
-              <th>Operations</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let booking of pagedBookings">
-              <td>#{{ booking.id }}</td>
-              <td>
-                <div class="user-cell">
-                  <span class="name">{{ booking.user.name }}</span>
-                  <span class="email">{{ booking.user.email }}</span>
-                </div>
-              </td>
-              <td>
-                <div class="car-cell">
-                  <span class="car-name">{{ booking.car.brand }} {{ booking.car.model }}</span>
-                  <span class="car-plate">{{ booking.car.carNumber }}</span>
-                </div>
-              </td>
-              <td>
-                <span class="type-badge" [ngClass]="booking.bookingType.toLowerCase()">
-                  {{ booking.bookingType }}
-                </span>
-              </td>
-              <td>
-                <div class="date-cell">
-                  <span>{{ booking.startDate }}</span>
-                  <span class="arrow">↓</span>
-                  <span>{{ booking.endDate }}</span>
-                </div>
-              </td>
-              <td>
-                <div class="route-cell">
-                  <span>{{ booking.pickupCity }}</span>
-                  <span class="arrow">→</span>
-                  <span>{{ booking.dropCity }}</span>
-                </div>
-              </td>
-              <td class="font-bold">₹{{ booking.totalPrice }}</td>
-              <td>
-                <span class="status-badge" [ngClass]="booking.status.toLowerCase()">
-                  {{ booking.status }}
-                </span>
-              </td>
-              <td>
-                <div class="action-cell">
-                  <!-- Verification Pending Action -->
-                  <button *ngIf="booking.status === 'VERIFICATION_PENDING'" class="btn btn-sm btn-primary" (click)="openLicensePopup(booking)">
-                    📝 Verify License
-                  </button>
-                  
-                  <!-- Driver Assignment Pending Action -->
-                  <button *ngIf="booking.status === 'DRIVER_ASSIGNMENT_PENDING'" class="btn btn-sm btn-primary" (click)="openAssignmentPopup(booking)">
-                    👤 Assign Driver
-                  </button>
-
-                  <!-- Inspection Pending Action -->
-                  <button *ngIf="booking.status === 'INSPECTION_PENDING'" class="btn btn-sm btn-success" (click)="processInspectionCompletion(booking)">
-                    🔧 Complete Return
-                  </button>
-                  
-                  <span *ngIf="booking.status !== 'VERIFICATION_PENDING' && booking.status !== 'DRIVER_ASSIGNMENT_PENDING' && booking.status !== 'INSPECTION_PENDING'">
-                    -
-                  </span>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="pagedBookings.length === 0">
-              <td colspan="9" class="text-center">No bookings found matching filters.</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Bookings Pagination -->
-        <div class="pagination-bar" *ngIf="filteredBookings.length > 0">
-          <div class="pagination-info">
-            Showing <strong>{{ bookingPage * bookingPageSize + 1 }}&ndash;{{ (bookingPage + 1) * bookingPageSize < filteredBookings.length ? (bookingPage + 1) * bookingPageSize : filteredBookings.length }}</strong> of <strong>{{ filteredBookings.length }}</strong> bookings
-          </div>
-          <div class="page-size-selector">
-            Rows:
-            <select [(ngModel)]="bookingPageSize" (ngModelChange)="bookingPage = 0">
-              <option [value]="5">5</option>
-              <option [value]="10">10</option>
-              <option [value]="25">25</option>
-              <option [value]="50">50</option>
-            </select>
-          </div>
-          <div class="pagination-controls">
-            <button class="page-btn" (click)="bookingPage = 0" [disabled]="bookingPage === 0">«</button>
-            <button class="page-btn" (click)="bookingPage = bookingPage - 1" [disabled]="bookingPage === 0">‹</button>
-            <ng-container *ngFor="let p of getPages(bookingTotalPages)">
-              <button class="page-btn" [class.active]="p === bookingPage" (click)="bookingPage = p"
-                *ngIf="p === 0 || p === bookingTotalPages - 1 || (p >= bookingPage - 1 && p <= bookingPage + 1)">
-                {{ p + 1 }}
-              </button>
-              <span class="page-ellipsis"
-                *ngIf="(p === 1 && bookingPage > 2) || (p === bookingTotalPages - 2 && bookingPage < bookingTotalPages - 3)">…</span>
-            </ng-container>
-            <button class="page-btn" (click)="bookingPage = bookingPage + 1" [disabled]="bookingPage === bookingTotalPages - 1">›</button>
-            <button class="page-btn" (click)="bookingPage = bookingTotalPages - 1" [disabled]="bookingPage === bookingTotalPages - 1">»</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
-</div>
-
-<!-- ==============================================
-     MODALS & DIALOGS
-     ============================================== -->
-
-<!-- CAR FORM MODAL -->
-<div class="modal-overlay" *ngIf="showCarModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>{{ isEditCar ? 'Update Vehicle' : 'Register Vehicle' }}</h2>
-      <button class="close-btn" (click)="closeCarModal()">✕</button>
-    </div>
-    <form (ngSubmit)="submitCarForm()" class="modal-form">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Car Plate Number</label>
-          <input type="text" [(ngModel)]="carForm.carNumber" name="carNumber" placeholder="e.g. MP09AB1234" required [disabled]="isEditCar" />
-        </div>
-        <div class="form-group">
-          <label>Brand</label>
-          <input type="text" [(ngModel)]="carForm.brand" name="brand" placeholder="e.g. Hyundai" required />
-        </div>
-        <div class="form-group">
-          <label>Model</label>
-          <input type="text" [(ngModel)]="carForm.model" name="model" placeholder="e.g. Creta" required />
-        </div>
-        <div class="form-group">
-          <label>Car Category</label>
-          <select [(ngModel)]="carForm.carClass" name="carClass">
+          <select [(ngModel)]="carFilter.category" (ngModelChange)="loadCars()">
+            <option value="">All Categories</option>
             <option value="ECONOMY">ECONOMY</option>
             <option value="HATCHBACK">HATCHBACK</option>
             <option value="SEDAN">SEDAN</option>
             <option value="SUV">SUV</option>
             <option value="LUXURY">LUXURY</option>
           </select>
-        </div>
-        <div class="form-group">
-          <label>Fuel Type</label>
-          <select [(ngModel)]="carForm.fuelType" name="fuelType">
-            <option value="PETROL">PETROL</option>
-            <option value="DIESEL">DIESEL</option>
-            <option value="CNG">CNG</option>
-            <option value="ELECTRIC">ELECTRIC</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Transmission</label>
-          <select [(ngModel)]="carForm.transmission" name="transmission">
-            <option value="MANUAL">MANUAL</option>
-            <option value="AUTOMATIC">AUTOMATIC</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Daily Price (₹)</label>
-          <input type="number" [(ngModel)]="carForm.pricePerDay" name="pricePerDay" min="100" step="50" required />
-        </div>
-        <div class="form-group">
-          <label>Current Location / Address</label>
-          <input type="text" [(ngModel)]="carForm.currentLocation" name="currentLocation" placeholder="e.g. Terminal 1, Airport" required />
+          <button class="btn btn-primary" (click)="loadCars()">Filter</button>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" (click)="closeCarModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary">{{ isEditCar ? 'Save Changes' : 'Add Vehicle' }}</button>
+
+      <div class="card table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Reg. Number</th>
+              <th>Vehicle</th>
+              <th>Category & Specs</th>
+              <th>Host</th>
+              <th>Daily Price</th>
+              <th>City</th>
+              <th>Approval</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let car of pagedCars" [class.disabled-row]="!car.active">
+              <td>#{{ car.id }}</td>
+              <td class="font-bold">{{ car.carNumber }}</td>
+              <td>{{ car.brand }} {{ car.model }}</td>
+              <td>
+                <span class="badge class">{{ car.carClass }}</span>
+                <div class="spec-tags" style="margin-top: 4px;">
+                  <span class="tag">{{ car.fuelType }}</span>
+                  <span class="tag">{{ car.transmission }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="user-cell">
+                  <span class="name">{{ car.hostName }}</span>
+                  <span class="email">{{ car.hostPhone }}</span>
+                </div>
+              </td>
+              <td>
+                ₹{{ car.pricePerDay }}
+                <div *ngIf="car.pricingOutOfRange" style="color: var(--danger); font-size: 11px;">⚠️ Pricing Violation</div>
+              </td>
+              <td>{{ car.currentCity }}</td>
+              <td><span class="status-badge" [ngClass]="car.approvalStatus.toLowerCase()">{{ car.approvalStatus }}</span></td>
+              <td><span class="status-badge" [ngClass]="car.status.toLowerCase()">{{ car.status }}</span></td>
+              <td>
+                <div class="btn-group" style="flex-wrap: wrap;">
+                  <button class="btn btn-sm btn-edit" (click)="openCarDetail(car.id)">View</button>
+                  <button *ngIf="car.approvalStatus !== 'APPROVED'" class="btn btn-sm btn-success" (click)="approveCar(car.id)">Approve</button>
+                  <button *ngIf="car.approvalStatus === 'PENDING'" class="btn btn-sm btn-danger" (click)="openReasonModal('car', car.id, 'reject')">Reject</button>
+                  <button *ngIf="car.status !== 'SUSPENDED' && car.status !== 'BOOKED'" class="btn btn-sm btn-danger" (click)="openReasonModal('car', car.id, 'suspend')">Suspend</button>
+                  <button *ngIf="car.status === 'SUSPENDED' || car.status === 'DISABLED'" class="btn btn-sm btn-success" (click)="reactivateCar(car.id)">Reactivate</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="pagedCars.length === 0">
+              <td colspan="10" class="text-center">No vehicle listings found in your assigned cities.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="pagination-bar" *ngIf="cars.length > 0">
+          <div class="pagination-info">Showing {{ carPage * carPageSize + 1 }}–{{ (carPage + 1) * carPageSize < cars.length ? (carPage + 1) * carPageSize : cars.length }} of {{ cars.length }}</div>
+          <div class="pagination-controls">
+            <button class="page-btn" (click)="carPage = carPage - 1" [disabled]="carPage === 0">‹</button>
+            <button class="page-btn" *ngFor="let p of getPages(carTotalPages)" [class.active]="p === carPage" (click)="carPage = p">{{ p + 1 }}</button>
+            <button class="page-btn" (click)="carPage = carPage + 1" [disabled]="carPage >= carTotalPages - 1">›</button>
+          </div>
+        </div>
       </div>
-    </form>
+    </div>
+
+    <!-- 3. HOST MANAGEMENT TAB -->
+    <div class="tab-content" *ngIf="activeTab === 'hosts'">
+      <div class="section-header">
+        <div class="search-bar" style="max-width: 100%;">
+          <input type="text" [(ngModel)]="hostFilter.search" (keyup.enter)="loadHosts()" placeholder="Search host name, email, phone, ID..." />
+          <select [(ngModel)]="hostFilter.verificationStatus" (ngModelChange)="loadHosts()">
+            <option value="">All Verification Statuses</option>
+            <option value="PENDING">PENDING</option>
+            <option value="VERIFIED">VERIFIED</option>
+            <option value="REJECTED">REJECTED</option>
+            <option value="RESUBMISSION_REQUESTED">RESUBMISSION REQUESTED</option>
+          </select>
+          <select [(ngModel)]="hostFilter.accountStatus" (ngModelChange)="loadHosts()">
+            <option value="">All Account Statuses</option>
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="INACTIVE">INACTIVE</option>
+            <option value="SUSPENDED">SUSPENDED</option>
+          </select>
+          <button class="btn btn-primary" (click)="loadHosts()">Filter</button>
+        </div>
+      </div>
+
+      <div class="card table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Host</th>
+              <th>Phone</th>
+              <th>City</th>
+              <th>Registered</th>
+              <th>Verification</th>
+              <th>Account Status</th>
+              <th>Vehicles</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let h of pagedHosts">
+              <td>#{{ h.id }}</td>
+              <td>
+                <div class="user-cell">
+                  <span class="name">{{ h.name }}</span>
+                  <span class="email">{{ h.email }}</span>
+                </div>
+              </td>
+              <td>{{ h.phone || '-' }}</td>
+              <td>{{ h.city || '-' }}</td>
+              <td>{{ h.createdAt ? (h.createdAt | date:'mediumDate') : '-' }}</td>
+              <td><span class="status-badge" [ngClass]="h.verificationStatus.toLowerCase()">{{ h.verificationStatus }}</span></td>
+              <td>
+                <span class="status-badge" [ngClass]="h.suspended ? 'rejected' : h.active ? 'available' : 'disabled'">
+                  {{ h.suspended ? 'SUSPENDED' : h.active ? 'ACTIVE' : 'INACTIVE' }}
+                </span>
+              </td>
+              <td>{{ h.vehicleCount }}</td>
+              <td>
+                <div class="btn-group" style="flex-wrap: wrap;">
+                  <button class="btn btn-sm btn-edit" (click)="openHostDetail(h.id)">View</button>
+                  <button *ngIf="h.verificationStatus !== 'VERIFIED'" class="btn btn-sm btn-success" (click)="approveHost(h.id)">Approve</button>
+                  <button *ngIf="h.verificationStatus === 'PENDING'" class="btn btn-sm btn-danger" (click)="openReasonModal('host', h.id, 'reject')">Reject</button>
+                  <button *ngIf="!h.suspended" class="btn btn-sm btn-danger" (click)="openReasonModal('host', h.id, 'suspend')">Suspend</button>
+                  <button *ngIf="!h.active || h.suspended" class="btn btn-sm btn-success" (click)="toggleHostActive(h)">Reactivate</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="pagedHosts.length === 0">
+              <td colspan="9" class="text-center">No hosts found in your assigned cities.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="pagination-bar" *ngIf="hosts.length > 0">
+          <div class="pagination-info">Showing {{ hostPage * hostPageSize + 1 }}–{{ (hostPage + 1) * hostPageSize < hosts.length ? (hostPage + 1) * hostPageSize : hosts.length }} of {{ hosts.length }}</div>
+          <div class="pagination-controls">
+            <button class="page-btn" (click)="hostPage = hostPage - 1" [disabled]="hostPage === 0">‹</button>
+            <button class="page-btn" *ngFor="let p of getPages(hostTotalPages)" [class.active]="p === hostPage" (click)="hostPage = p">{{ p + 1 }}</button>
+            <button class="page-btn" (click)="hostPage = hostPage + 1" [disabled]="hostPage >= hostTotalPages - 1">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. BOOKING OPERATIONS TAB (SELF-DRIVE ONLY) -->
+    <div class="tab-content" *ngIf="activeTab === 'bookings'">
+      <div class="sub-tab-bar">
+        <button class="sub-tab" [class.active]="bookingSubTab === 'all'" (click)="switchBookingSubTab('all')">
+          All Self-Drive Bookings
+        </button>
+        <button class="sub-tab" [class.active]="bookingSubTab === 'verification'" (click)="switchBookingSubTab('verification')">
+          Driving Licence Verification <span class="tab-badge warning" *ngIf="stats.pendingLicenceVerifications > 0">{{ stats.pendingLicenceVerifications }}</span>
+        </button>
+        <button class="sub-tab" [class.active]="bookingSubTab === 'issues'" (click)="switchBookingSubTab('issues')">
+          Booking Issues & Escalations <span class="tab-badge info" *ngIf="issues.length > 0">{{ issues.length }}</span>
+        </button>
+      </div>
+
+      <!-- ALL & VERIFICATION BOOKINGS -->
+      <div *ngIf="bookingSubTab !== 'issues'">
+        <div class="filters-row" *ngIf="bookingSubTab === 'all'">
+          <input type="text" [(ngModel)]="bookingFilter.search" (keyup.enter)="loadBookings()" placeholder="Search Booking ID, Customer, Plate..." />
+          <select [(ngModel)]="bookingFilter.status" (ngModelChange)="loadBookings()">
+            <option value="">All Booking Statuses</option>
+            <option value="PENDING_PAYMENT">PENDING_PAYMENT</option>
+            <option value="PAYMENT_SUCCESS">PAYMENT_SUCCESS</option>
+            <option value="VERIFICATION_PENDING">VERIFICATION_PENDING</option>
+            <option value="CONFIRMED">CONFIRMED</option>
+            <option value="IN_PROGRESS">IN_PROGRESS</option>
+            <option value="INSPECTION_PENDING">INSPECTION_PENDING</option>
+            <option value="COMPLETED">COMPLETED</option>
+            <option value="REJECTED">REJECTED</option>
+            <option value="CANCELLED">CANCELLED</option>
+          </select>
+          <select [(ngModel)]="bookingFilter.paymentStatus" (ngModelChange)="loadBookings()">
+            <option value="">All Payment Statuses</option>
+            <option value="PENDING">PENDING</option>
+            <option value="SUCCESS">SUCCESS</option>
+            <option value="FAILED">FAILED</option>
+            <option value="REFUNDED">REFUNDED</option>
+          </select>
+          <button class="btn btn-primary" (click)="loadBookings()">Filter</button>
+        </div>
+
+        <div class="card table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Vehicle & Host</th>
+                <th>Dates</th>
+                <th>Pickup Location</th>
+                <th>Total</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let b of pagedBookings">
+                <td>#{{ b.id }}</td>
+                <td>
+                  <div class="user-cell">
+                    <span class="name">{{ b.customerName }}</span>
+                    <span class="email">{{ b.customerContact }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="car-cell">
+                    <span class="car-name">{{ b.vehicleName }} ({{ b.vehicleNumber }})</span>
+                    <span class="car-plate">Host: {{ b.hostName }}</span>
+                  </div>
+                </td>
+                <td>{{ b.startDate }} → {{ b.endDate }}</td>
+                <td>{{ b.pickupLocation }} ({{ b.pickupCity }})</td>
+                <td class="font-bold">₹{{ b.totalAmount }}</td>
+                <td><span class="status-badge">{{ b.paymentStatus }}</span></td>
+                <td><span class="status-badge" [ngClass]="b.bookingStatus.toLowerCase()">{{ b.bookingStatus }}</span></td>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn-sm btn-edit" (click)="openBookingDetail(b.id)">Details</button>
+                    <button *ngIf="b.bookingStatus === 'VERIFICATION_PENDING'" class="btn btn-sm btn-primary" (click)="openLicensePopup(b)">
+                      Verify Licence
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="pagedBookings.length === 0">
+                <td colspan="9" class="text-center">No self-drive bookings found.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BOOKING ISSUES & ESCALATIONS -->
+      <div *ngIf="bookingSubTab === 'issues'">
+        <div class="card table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Booking</th>
+                <th>Type & Title</th>
+                <th>Reported By</th>
+                <th>Assigned Support</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let issue of issues">
+                <td>#{{ issue.id }}</td>
+                <td>{{ issue.bookingId ? '#' + issue.bookingId : '-' }}</td>
+                <td>
+                  <strong>{{ issue.title }}</strong>
+                  <div style="font-size: 12px; color: var(--text-muted);">{{ issue.description }}</div>
+                </td>
+                <td>{{ issue.reportedByName }}</td>
+                <td>{{ issue.assignedSupportAgentName || 'Unassigned' }}</td>
+                <td><span class="status-badge">{{ issue.status }}</span></td>
+                <td>
+                  <div class="btn-group">
+                    <button *ngIf="issue.status !== 'RESOLVED'" class="btn btn-sm btn-primary" (click)="openIssueModal(issue, 'escalate')">Escalate</button>
+                    <button *ngIf="issue.status !== 'RESOLVED'" class="btn btn-sm btn-success" (click)="openIssueModal(issue, 'resolve')">Resolve</button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="issues.length === 0">
+                <td colspan="7" class="text-center">No booking issues or escalations in your assigned cities.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. INSPECTION MANAGEMENT TAB -->
+    <div class="tab-content" *ngIf="activeTab === 'inspections'">
+      <div class="section-header">
+        <div class="search-bar">
+          <select [(ngModel)]="inspectionFilter.status" (ngModelChange)="loadInspections()">
+            <option value="">All Inspection Statuses</option>
+            <option value="SCHEDULED">SCHEDULED</option>
+            <option value="PENDING">PENDING</option>
+            <option value="COMPLETED">COMPLETED</option>
+            <option value="FAILED">FAILED</option>
+            <option value="ESCALATED">ESCALATED</option>
+          </select>
+          <select [(ngModel)]="inspectionFilter.type" (ngModelChange)="loadInspections()">
+            <option value="">All Inspection Types</option>
+            <option value="INITIAL">INITIAL</option>
+            <option value="PERIODIC">PERIODIC</option>
+            <option value="PRE_TRIP">PRE_TRIP</option>
+            <option value="POST_TRIP">POST_TRIP</option>
+            <option value="DAMAGE">DAMAGE</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Vehicle</th>
+              <th>Host</th>
+              <th>Type</th>
+              <th>Fleet Manager</th>
+              <th>Scheduled / Completed</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let insp of pagedInspections">
+              <td>#{{ insp.id }}</td>
+              <td>{{ insp.vehicleName }} ({{ insp.carNumber }})</td>
+              <td>{{ insp.hostName }}</td>
+              <td><span class="badge class">{{ insp.inspectionType }}</span></td>
+              <td>{{ insp.fleetManagerName }}</td>
+              <td>{{ (insp.completedDate || insp.scheduledDate || insp.createdAt) | date:'short' }}</td>
+              <td><span class="status-badge">{{ insp.status }}</span></td>
+              <td>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-edit" (click)="openInspectionDetail(insp.id)">View Report</button>
+                  <button *ngIf="insp.status !== 'ESCALATED'" class="btn btn-sm btn-danger" (click)="openEscalateInspection(insp)">Escalate</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="pagedInspections.length === 0">
+              <td colspan="8" class="text-center">No vehicle inspections found in your assigned cities.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- VEHICLE DETAIL MODAL -->
+<div class="modal-overlay" *ngIf="showCarDetailModal && selectedCar">
+  <div class="modal" style="width: 820px; max-height: 88vh; overflow-y: auto;">
+    <div class="modal-header">
+      <h2>Vehicle Listing #{{ selectedCar.id }} — {{ selectedCar.brand }} {{ selectedCar.model }}</h2>
+      <button class="close-btn" (click)="showCarDetailModal = false">✕</button>
+    </div>
+    <div class="popup-body">
+      <div *ngIf="selectedCar.pricingOutOfRange" style="padding: 12px; background: var(--danger-light); color: var(--danger); border-radius: 8px; margin-bottom: 16px;">
+        ⚠️ <strong>Pricing Violation:</strong> {{ selectedCar.pricingViolationMessage }}
+        (Permitted category range: ₹{{ selectedCar.minAllowedPrice }} – ₹{{ selectedCar.maxAllowedPrice }}/day)
+      </div>
+
+      <div class="detail-grid">
+        <p><strong>Reg. Number:</strong> {{ selectedCar.carNumber }}</p>
+        <p><strong>Year / Seats:</strong> {{ selectedCar.manufacturingYear || 'N/A' }} / {{ selectedCar.seatingCapacity || 'N/A' }}</p>
+        <p><strong>Category:</strong> {{ selectedCar.carClass }}</p>
+        <p><strong>Fuel / Trans:</strong> {{ selectedCar.fuelType }} / {{ selectedCar.transmission }}</p>
+        <p><strong>Host Daily Price:</strong> ₹{{ selectedCar.pricePerDay }} (Read-only)</p>
+        <p><strong>City / Address:</strong> {{ selectedCar.currentCity }} — {{ selectedCar.currentLocation }}</p>
+        <p><strong>Approval Status:</strong> {{ selectedCar.approvalStatus }}</p>
+        <p><strong>Operational Status:</strong> {{ selectedCar.status }}</p>
+        <p><strong>Host:</strong> {{ selectedCar.hostName }} ({{ selectedCar.hostPhone || selectedCar.hostEmail || '-' }})</p>
+        <p><strong>Host Verification:</strong> {{ selectedCar.hostVerificationStatus || 'N/A' }}</p>
+      </div>
+
+      <p style="margin-top: 12px;"><strong>Description:</strong> {{ selectedCar.description || 'No description provided.' }}</p>
+
+      <h4 style="margin-top: 18px;">Vehicle Documents & Photos</h4>
+      <div class="detail-grid" style="margin-top: 8px;">
+        <p><strong>RC:</strong> {{ selectedCar.rcDocumentUrl || 'Not uploaded' }}</p>
+        <p><strong>Insurance:</strong> {{ selectedCar.insuranceDocumentUrl || 'Not uploaded' }}</p>
+        <p><strong>PUC:</strong> {{ selectedCar.pucDocumentUrl || 'Not uploaded' }}</p>
+        <p><strong>Other:</strong> {{ selectedCar.otherDocumentUrl || 'None' }}</p>
+      </div>
+
+      <h4 style="margin-top: 18px;">Listing History</h4>
+      <p *ngIf="!selectedCar.listingHistory?.length" style="color: var(--text-muted);">No listing actions recorded yet.</p>
+      <div *ngFor="let h of selectedCar.listingHistory" style="padding: 8px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+        <strong>{{ h.action }}</strong> by {{ h.actorEmail }} — {{ h.createdAt | date:'short' }}
+        <div *ngIf="h.remarks" style="color: var(--text-muted);">{{ h.remarks }}</div>
+      </div>
+
+      <div class="modal-footer" style="flex-wrap: wrap;">
+        <button class="btn btn-success" *ngIf="selectedCar.approvalStatus !== 'APPROVED'" (click)="approveCar(selectedCar.id)">Approve Listing</button>
+        <button class="btn btn-outline" (click)="openReasonModal('car', selectedCar.id, 'resubmission')">Request Resubmission</button>
+        <button class="btn btn-danger" (click)="openReasonModal('car', selectedCar.id, 'reject')">Reject Listing</button>
+        <button class="btn btn-danger" *ngIf="selectedCar.status !== 'SUSPENDED'" (click)="openReasonModal('car', selectedCar.id, 'suspend')">Suspend</button>
+        <button class="btn btn-success" *ngIf="selectedCar.status === 'SUSPENDED' || selectedCar.status === 'DISABLED'" (click)="reactivateCar(selectedCar.id)">Reactivate</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- DRIVER FORM MODAL -->
-<div class="modal-overlay" *ngIf="showDriverModal">
-  <div class="modal">
+<!-- HOST DETAIL MODAL -->
+<div class="modal-overlay" *ngIf="showHostDetailModal && selectedHost">
+  <div class="modal" style="width: 820px; max-height: 88vh; overflow-y: auto;">
     <div class="modal-header">
-      <h2>Register New Driver Account</h2>
-      <button class="close-btn" (click)="closeDriverModal()">✕</button>
+      <h2>Host Profile — {{ selectedHost.name }}</h2>
+      <button class="close-btn" (click)="showHostDetailModal = false">✕</button>
     </div>
-    <form (ngSubmit)="submitDriverForm()" class="modal-form">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Driver Full Name</label>
-          <input type="text" [(ngModel)]="driverForm.name" name="name" placeholder="John Doe" required />
-        </div>
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" [(ngModel)]="driverForm.email" name="email" placeholder="john.doe@carrental.com" required />
-        </div>
-        <div class="form-group">
-          <label>License Number</label>
-          <input type="text" [(ngModel)]="driverForm.licenseNumber" name="licenseNumber" placeholder="DL-1420110012345" required />
-        </div>
-        <div class="form-group">
-          <label>Years of Experience</label>
-          <input type="number" [(ngModel)]="driverForm.experienceYears" name="experienceYears" min="0" max="50" required />
-        </div>
-        <div class="form-group">
-          <label>Initial Operating City</label>
-          <input type="text" [(ngModel)]="driverForm.currentLocation" name="currentLocation" required />
-        </div>
-        <div class="form-group">
-          <label>Initial Password (Optional)</label>
-          <input type="password" [(ngModel)]="driverForm.password" name="password" placeholder="Leave blank to auto-generate" />
-        </div>
+    <div class="popup-body">
+      <div class="detail-grid">
+        <p><strong>Email:</strong> {{ selectedHost.email }}</p>
+        <p><strong>Phone:</strong> {{ selectedHost.phone || 'N/A' }}</p>
+        <p><strong>City / Address:</strong> {{ selectedHost.city }} — {{ selectedHost.address || 'N/A' }}</p>
+        <p><strong>Gov ID (Masked):</strong> {{ selectedHost.governmentIdNumber || 'N/A' }} ({{ selectedHost.documentType || '-' }})</p>
+        <p><strong>Verification:</strong> {{ selectedHost.verificationStatus }}</p>
+        <p><strong>Total Earnings:</strong> ₹{{ selectedHost.totalEarnings }}</p>
+        <p><strong>Completed Bookings:</strong> {{ selectedHost.completedBookings }} / {{ selectedHost.totalBookings }}</p>
+        <p><strong>Document Ref:</strong> {{ selectedHost.documentUrl || 'Not uploaded' }}</p>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" (click)="closeDriverModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary">Register Driver</button>
+
+      <h4 style="margin-top: 18px;">Host Vehicles ({{ selectedHost.vehicles.length }})</h4>
+      <div *ngFor="let v of selectedHost.vehicles" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+        <span>{{ v.brand }} {{ v.model }} ({{ v.carNumber }}) — ₹{{ v.pricePerDay }}/day</span>
+        <button class="btn btn-sm btn-edit" (click)="showHostDetailModal = false; openCarDetail(v.id)">View Vehicle</button>
       </div>
-    </form>
+
+      <div class="modal-footer" style="flex-wrap: wrap;">
+        <button class="btn btn-success" *ngIf="selectedHost.verificationStatus !== 'VERIFIED'" (click)="approveHost(selectedHost.id)">Approve Host</button>
+        <button class="btn btn-outline" (click)="openReasonModal('host', selectedHost.id, 'resubmission')">Request Resubmission</button>
+        <button class="btn btn-danger" (click)="openReasonModal('host', selectedHost.id, 'reject')">Reject Host</button>
+        <button class="btn btn-danger" *ngIf="!selectedHost.suspended" (click)="openReasonModal('host', selectedHost.id, 'suspend')">Suspend Host</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOOKING DETAIL MODAL -->
+<div class="modal-overlay" *ngIf="showBookingDetailModal && selectedBooking">
+  <div class="modal" style="width: 780px; max-height: 88vh; overflow-y: auto;">
+    <div class="modal-header">
+      <h2>Booking #{{ selectedBooking.id }} Details</h2>
+      <button class="close-btn" (click)="showBookingDetailModal = false">✕</button>
+    </div>
+    <div class="popup-body">
+      <div class="detail-grid">
+        <p><strong>Customer:</strong> {{ selectedBooking.customerName }} ({{ selectedBooking.customerEmail }})</p>
+        <p><strong>Host:</strong> {{ selectedBooking.hostName }} ({{ selectedBooking.hostPhone || '-' }})</p>
+        <p><strong>Vehicle:</strong> {{ selectedBooking.vehicleName }} ({{ selectedBooking.vehicleNumber }})</p>
+        <p><strong>Schedule:</strong> {{ selectedBooking.startDate }} → {{ selectedBooking.endDate }}</p>
+        <p><strong>Pickup:</strong> {{ selectedBooking.pickupLocation }}, {{ selectedBooking.pickupCity }}</p>
+        <p><strong>Drop:</strong> {{ selectedBooking.dropLocation }}, {{ selectedBooking.dropCity }}</p>
+        <p><strong>Gross Rental:</strong> ₹{{ selectedBooking.grossAmount || selectedBooking.finalPrice }}</p>
+        <p><strong>Platform Commission:</strong> {{ selectedBooking.platformCommissionPercent || 0 }}% (₹{{ selectedBooking.platformCommissionAmount || 0 }})</p>
+        <p><strong>Host Earnings Snapshot:</strong> ₹{{ selectedBooking.hostEarningsAmount || 0 }}</p>
+        <p><strong>Payment Status:</strong> {{ selectedBooking.paymentStatus }} ({{ selectedBooking.paymentRef || 'No Ref' }})</p>
+        <p><strong>Licence No:</strong> {{ selectedBooking.drivingLicenseNumber || 'N/A' }}</p>
+        <p><strong>Verified By:</strong> {{ selectedBooking.licenceVerifiedBy || 'Pending' }}</p>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- LICENSE VERIFICATION DIALOG -->
-<div class="modal-overlay" *ngIf="showLicensePopup">
-  <div class="modal size-sm" *ngIf="selectedBooking">
+<div class="modal-overlay" *ngIf="showLicensePopup && selectedBooking">
+  <div class="modal size-sm">
     <div class="modal-header">
-      <h2>Driving License Validation</h2>
-      <button class="close-btn" (click)="closeLicensePopup()">✕</button>
+      <h2>Driving Licence Verification</h2>
+      <button class="close-btn" (click)="showLicensePopup = false">✕</button>
     </div>
     <div class="popup-body">
-      <div class="verify-details">
-        <p><span class="label">Booking ID:</span> <strong>#{{ selectedBooking.id }}</strong></p>
-        <p><span class="label">Customer Name:</span> {{ selectedBooking.user.name }}</p>
-        <p><span class="label">Customer Email:</span> {{ selectedBooking.user.email }}</p>
-        <p><span class="label">Vehicle Class:</span> {{ selectedBooking.car.carClass }} ({{ selectedBooking.car.brand }} {{ selectedBooking.car.model }})</p>
-        
-        <div class="license-box">
-          <span class="license-tag font-bold">DRIVING LICENSE NO:</span>
-          <p class="license-number">{{ selectedBooking.drivingLicenseNumber }}</p>
-        </div>
+      <p><strong>Booking:</strong> #{{ selectedBooking.id }} — {{ selectedBooking.customerName }}</p>
+      <div class="license-box">
+        <span class="license-tag font-bold">DRIVING LICENCE NO:</span>
+        <p class="license-number">{{ selectedBooking.drivingLicenseNumber }}</p>
+        <small *ngIf="selectedBooking.licenceDocumentUrl">Doc: {{ selectedBooking.licenceDocumentUrl }}</small>
       </div>
-      <p class="caution-text">⚠️ By approving, you confirm that the license number is valid and matches the driver details.</p>
+      <div class="form-group" style="margin-top: 14px;">
+        <label>Verification Remarks</label>
+        <textarea rows="2" [(ngModel)]="licenseRemarks" placeholder="Enter remarks (required for reject/resubmission)..."></textarea>
+      </div>
     </div>
-    <div class="modal-footer split">
-      <button type="button" class="btn btn-danger" (click)="processLicenseVerification(false)">❌ Reject & Cancel</button>
-      <button type="button" class="btn btn-success" (click)="processLicenseVerification(true)">✅ Approve & Confirm</button>
+    <div class="modal-footer" style="flex-wrap: wrap;">
+      <button class="btn btn-danger" (click)="processLicenseVerification(false, false)">Reject</button>
+      <button class="btn btn-outline" (click)="processLicenseVerification(false, true)">Request Resubmission</button>
+      <button class="btn btn-success" (click)="processLicenseVerification(true, false)">Approve & Confirm</button>
     </div>
   </div>
 </div>
 
-<!-- MANUAL DRIVER ASSIGNMENT DIALOG -->
-<div class="modal-overlay" *ngIf="showAssignmentPopup">
-  <div class="modal size-sm" *ngIf="selectedBooking">
+<!-- REASON MODAL -->
+<div class="modal-overlay" *ngIf="showReasonModal">
+  <div class="modal size-sm">
     <div class="modal-header">
-      <h2>Assign Driver</h2>
-      <button class="close-btn" (click)="closeAssignmentPopup()">✕</button>
+      <h2>{{ reasonTitle }}</h2>
+      <button class="close-btn" (click)="showReasonModal = false">✕</button>
     </div>
-    <form (ngSubmit)="submitDriverAssignment()" class="modal-form">
-      <div class="verify-details">
-        <p><span class="label">Booking ID:</span> <strong>#{{ selectedBooking.id }}</strong></p>
-        <p><span class="label">Pickup City:</span> {{ selectedBooking.pickupCity }}</p>
-        <p><span class="label">Dates:</span> {{ selectedBooking.startDate }} to {{ selectedBooking.endDate }}</p>
-        
-        <div class="form-group mt-15">
-          <label>Select Local Available Driver</label>
-          <select [(ngModel)]="selectedDriverIdForAssignment" name="driverSelect" required class="full-width">
-            <option value="">-- Choose Driver --</option>
-            <option *ngFor="let driver of availableDriversForAssignment" [value]="driver.id">
-              {{ driver.user.name }} (Exp: {{ driver.experienceYears }} Yrs, License: {{ driver.licenseNumber }})
-            </option>
-          </select>
-          <p class="sub-text text-danger" *ngIf="availableDriversForAssignment.length === 0">
-            ⚠️ No available drivers in {{ selectedBooking.pickupCity }}.
-          </p>
-        </div>
+    <div class="popup-body">
+      <div class="form-group">
+        <label>Reason / Remarks</label>
+        <textarea rows="3" [(ngModel)]="actionReason" placeholder="Provide detailed reason..."></textarea>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline" (click)="closeAssignmentPopup()">Cancel</button>
-        <button type="submit" class="btn btn-primary" [disabled]="!selectedDriverIdForAssignment">Assign Driver</button>
+        <button class="btn btn-outline" (click)="showReasonModal = false">Cancel</button>
+        <button class="btn btn-danger" (click)="submitReasonAction()">Confirm</button>
       </div>
-    </form>
+    </div>
+  </div>
+</div>
+
+<!-- ISSUE ESCALATION / RESOLUTION MODAL -->
+<div class="modal-overlay" *ngIf="showIssueModal && selectedIssue">
+  <div class="modal size-sm">
+    <div class="modal-header">
+      <h2>{{ issueMode === 'escalate' ? 'Escalate Issue to Support Agent' : 'Resolve Booking Issue' }}</h2>
+      <button class="close-btn" (click)="showIssueModal = false">✕</button>
+    </div>
+    <div class="popup-body">
+      <div class="form-group" *ngIf="issueMode === 'escalate'" style="margin-bottom: 12px;">
+        <label>Assign Support Agent (Optional)</label>
+        <select [(ngModel)]="selectedSupportAgentId">
+          <option [ngValue]="null">-- General Support Queue --</option>
+          <option *ngFor="let a of supportAgents" [ngValue]="a.id">{{ a.name }} ({{ a.city || 'Global' }})</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>{{ issueMode === 'escalate' ? 'Internal Escalation Remarks' : 'Resolution Details' }}</label>
+        <textarea rows="3" [(ngModel)]="issueRemarks" placeholder="Enter details..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="showIssueModal = false">Cancel</button>
+        <button class="btn btn-primary" (click)="submitIssueAction()">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INSPECTION DETAIL MODAL -->
+<div class="modal-overlay" *ngIf="showInspectionDetailModal && selectedInspection">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Inspection Report #{{ selectedInspection.id }}</h2>
+      <button class="close-btn" (click)="showInspectionDetailModal = false">✕</button>
+    </div>
+    <div class="popup-body">
+      <div class="detail-grid">
+        <p><strong>Vehicle:</strong> {{ selectedInspection.vehicleName }} ({{ selectedInspection.carNumber }})</p>
+        <p><strong>Host:</strong> {{ selectedInspection.hostName }}</p>
+        <p><strong>Type:</strong> {{ selectedInspection.inspectionType }}</p>
+        <p><strong>Status:</strong> {{ selectedInspection.status }}</p>
+        <p><strong>Fleet Manager:</strong> {{ selectedInspection.fleetManagerName }}</p>
+        <p><strong>Result:</strong> {{ selectedInspection.result || 'Pending' }}</p>
+        <p><strong>Damage Details:</strong> {{ selectedInspection.damageDetails || 'None reported' }}</p>
+        <p><strong>Fleet Remarks:</strong> {{ selectedInspection.fleetManagerRemarks || '-' }}</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="showInspectionDetailModal = false">Close</button>
+        <button *ngIf="selectedInspection.status !== 'ESCALATED'" class="btn btn-danger"
+          (click)="showInspectionDetailModal = false; openEscalateInspection(selectedInspection)">Escalate Issue</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ESCALATE INSPECTION MODAL -->
+<div class="modal-overlay" *ngIf="showEscalateInspectionModal">
+  <div class="modal size-sm">
+    <div class="modal-header">
+      <h2>Escalate Inspection Issue</h2>
+      <button class="close-btn" (click)="showEscalateInspectionModal = false">✕</button>
+    </div>
+    <div class="popup-body">
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>Escalation Remarks</label>
+        <textarea rows="3" [(ngModel)]="inspectionEscalationRemarks" placeholder="Describe the safety/policy issue..."></textarea>
+      </div>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" [(ngModel)]="suspendVehicleOnEscalate" style="width: auto;" />
+        <span>Immediately suspend this vehicle from marketplace</span>
+      </label>
+      <div class="modal-footer">
+        <button class="btn btn-outline" (click)="showEscalateInspectionModal = false">Cancel</button>
+        <button class="btn btn-danger" (click)="submitInspectionEscalation()">Escalate</button>
+      </div>
+    </div>
   </div>
 </div>

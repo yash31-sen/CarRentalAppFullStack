@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -25,6 +26,8 @@ public class BookingService {
     private final ServiceCityRepository serviceCityRepository;
     private final CarPricingRepository carPricingRepository;
     private final EmailService emailService;
+    private final PricingValidationService pricingValidationService;
+    private final PlatformSettingsRepository platformSettingsRepository;
 
     // =============================================
     // 1. CREATE BOOKING
@@ -96,32 +99,45 @@ public class BookingService {
 
         // Step 10 - get pricing rule for this car class
         CarPricing pricing = carPricingRepository
-                .findByCarClass(car.getCarClass())
+                .findFirstByCarClassAndActiveTrue(car.getCarClass())
+                .or(() -> carPricingRepository.findByCarClass(car.getCarClass()))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "No pricing rule found for "
                                 + car.getCarClass()
                                 + ". Contact Super Admin."));
 
-        // Step 11 - calculate price
+        // Step 11 - calculate price & immutable commission snapshot
         long days = ChronoUnit.DAYS.between(
                 req.getStartDate(),
                 req.getEndDate()) + 1;
 
-        double baseFare    = pricing.getBaseFare();
-        double timeCharge  = days * car.getPricePerDay();
-        double oneWayFee   = 0.0;
+        BigDecimal baseFareBd = BigDecimal.valueOf(pricing.getBaseFare());
+        BigDecimal timeChargeBd = BigDecimal.valueOf(car.getPricePerDay()).multiply(BigDecimal.valueOf(days));
+        BigDecimal oneWayFeeBd = BigDecimal.ZERO;
 
         if (req.getTripType() == TripType.ONE_WAY) {
             ServiceCity pickupCity = serviceCityRepository
-                    .findByCityName(req.getPickupCity())
+                    .findByCityNameIgnoreCase(req.getPickupCity())
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.BAD_REQUEST,
                             "Pickup city not found"));
-            oneWayFee = pickupCity.getOneWayFee();
+            oneWayFeeBd = BigDecimal.valueOf(pickupCity.getOneWayFee());
         }
 
-        double estimatedPrice = baseFare + timeCharge + oneWayFee;
+        BigDecimal platformFee = platformSettingsRepository.findAll().stream()
+                .findFirst()
+                .map(PlatformSettings::getDefaultPlatformServiceFee)
+                .orElse(BigDecimal.ZERO);
+
+        BigDecimal grossRentalBd = baseFareBd.add(timeChargeBd).add(oneWayFeeBd);
+        PricingValidationService.CommissionSnapshot snapshot =
+                pricingValidationService.calculateCommissionSnapshot(grossRentalBd, pricing, platformFee);
+
+        double baseFare = baseFareBd.doubleValue();
+        double timeCharge = timeChargeBd.doubleValue();
+        double oneWayFee = oneWayFeeBd.doubleValue();
+        double estimatedPrice = grossRentalBd.add(snapshot.getPlatformFeeAmount()).doubleValue();
 
         // Step 12 - build and save booking
         Booking booking = Booking.builder()
@@ -143,6 +159,12 @@ public class BookingService {
                 .extraKmCharge(0.0)
                 .finalPrice(estimatedPrice)
                 .totalPrice(estimatedPrice)
+                .grossAmount(snapshot.getGrossAmount())
+                .platformCommissionPercent(snapshot.getCommissionPercent())
+                .platformCommissionAmount(snapshot.getCommissionAmount())
+                .platformFeeAmount(snapshot.getPlatformFeeAmount())
+                .hostEarningsAmount(snapshot.getHostEarningsAmount())
+                .hostPayoutStatus(car.getHost() != null ? PayoutStatus.PENDING : PayoutStatus.NOT_APPLICABLE)
                 .drivingLicenseNumber(req.getDrivingLicenseNumber())
                 .build();
 
@@ -293,6 +315,17 @@ public class BookingService {
 
                 b.setExtraKmCharge(extraCharge);
                 b.setFinalPrice(b.getEstimatedPrice() + extraCharge);
+
+                // Recalculate commission using the stored historical commission percent (never latest pricing rule!)
+                if (b.getPlatformCommissionPercent() != null && b.getGrossAmount() != null) {
+                    BigDecimal updatedGross = b.getGrossAmount().add(BigDecimal.valueOf(extraCharge));
+                    BigDecimal updatedCommission = updatedGross
+                            .multiply(b.getPlatformCommissionPercent())
+                            .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                    b.setGrossAmount(updatedGross);
+                    b.setPlatformCommissionAmount(updatedCommission);
+                    b.setHostEarningsAmount(updatedGross.subtract(updatedCommission));
+                }
             }
         }
 
@@ -418,10 +451,12 @@ public class BookingService {
     // =============================================
     private void validateCities(BookingCreateRequest req) {
 
-        boolean pickupExists = serviceCityRepository
-                .existsByCityNameAndActiveTrue(req.getPickupCity());
+        ServiceCity pickupCity = serviceCityRepository
+                .findByCityNameIgnoreCase(req.getPickupCity())
+                .orElse(null);
 
-        if (!pickupExists) {
+        if (pickupCity == null || !pickupCity.isActive()
+                || Boolean.FALSE.equals(pickupCity.getBookingAvailable())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Service not available in "
@@ -438,10 +473,12 @@ public class BookingService {
                                 "different for one way trip");
             }
 
-            boolean dropExists = serviceCityRepository
-                    .existsByCityNameAndActiveTrue(req.getDropCity());
+            ServiceCity dropCity = serviceCityRepository
+                    .findByCityNameIgnoreCase(req.getDropCity())
+                    .orElse(null);
 
-            if (!dropExists) {
+            if (dropCity == null || !dropCity.isActive()
+                    || Boolean.FALSE.equals(dropCity.getBookingAvailable())) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "One way trips to "

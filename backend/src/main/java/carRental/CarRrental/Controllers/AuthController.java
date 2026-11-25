@@ -1,15 +1,11 @@
 package carRental.CarRrental.Controllers;
 
-import carRental.CarRrental.Dtos.RegisterRequest;
+import carRental.CarRrental.Dtos.*;
 import carRental.CarRrental.Services.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import carRental.CarRrental.Dtos.AuthResponse;
-import carRental.CarRrental.Dtos.LoginRequest;
-import carRental.CarRrental.Dtos.ForgotPasswordRequest;
-import carRental.CarRrental.Dtos.ResetPasswordRequest;
-import carRental.CarRrental.Dtos.GoogleLoginRequest;
-import carRental.CarRrental.Dtos.RefreshTokenRequest;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,27 +20,33 @@ public class AuthController {
         this.authService = authService;
     }
 
-    // Register API
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@jakarta.validation.Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest request) {
         authService.register(request);
-
         return ResponseEntity.ok(
-                Map.of("message", "Registration successful. Please check email for verification link.")
+                Map.of("message", "Registration successful. Please check your email for the verification link.")
         );
     }
 
-    // Email Verify API
-    @GetMapping("/verify")
-    public ResponseEntity<AuthResponse> verify(
-            @RequestParam String token) {
-        AuthResponse response = authService.verifyEmail(token);
-        return ResponseEntity.ok(response);     // ✅ returns JWT!
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Map<String, String>> resendVerification(@RequestBody Map<String, String> payload) {
+        authService.resendVerificationEmail(payload.get("email"));
+        return ResponseEntity.ok(
+                Map.of("message", "If an unverified account exists for that email, a new verification link has been sent.")
+        );
     }
+
+    @GetMapping("/verify")
+    public ResponseEntity<AuthResponse> verify(@RequestParam String token) {
+        AuthResponse response = authService.verifyEmail(token);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/login")
-    public AuthResponse login(@jakarta.validation.Valid @RequestBody LoginRequest request) {
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
     }
+
     @PostMapping("/google")
     public AuthResponse googleLogin(@RequestBody GoogleLoginRequest request) {
         return authService.googleLogin(request);
@@ -55,7 +57,13 @@ public class AuthController {
         return authService.refreshToken(request);
     }
 
-
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(Authentication authentication) {
+        if (authentication != null) {
+            authService.logout(authentication.getName());
+        }
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully."));
+    }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
@@ -81,4 +89,17 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/mobile/send-verification")
+    public ResponseEntity<Map<String, Object>> sendMobileVerification(
+            Authentication authentication,
+            @RequestBody Map<String, String> payload
+    ) {
+        String mobileNumber = payload.get("mobileNumber");
+        return ResponseEntity.ok(authService.sendMobileVerification(authentication.getName(), mobileNumber));
+    }
+
+    @GetMapping("/mobile/verify")
+    public ResponseEntity<Map<String, Object>> verifyMobile(@RequestParam String token) {
+        return ResponseEntity.ok(authService.verifyMobile(token));
+    }
 }

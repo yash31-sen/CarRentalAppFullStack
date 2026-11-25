@@ -18,6 +18,8 @@ public enum CarStatus {
     // admin needs to inspect
     // before making available again
 
+    SUSPENDED,              // temporarily suspended by admin
+
     DISABLED                // permanently removed
     // from fleet
 }

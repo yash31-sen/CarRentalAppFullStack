@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     long countByRole(UserRole role);
+    long countByRoleAndIsActive(UserRole role, boolean isActive);
     Optional<AppUser> findByEmail(String email);
 
     boolean existsByEmail(String email);

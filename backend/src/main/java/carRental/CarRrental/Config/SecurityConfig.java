@@ -18,25 +18,22 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
-
         this.jwtAuthFilter = jwtAuthFilter;
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-
-        config.setAllowCredentials(true); // ✅ keep this
-
-        config.addAllowedOriginPattern("*"); // ✅ FIX (NOT addAllowedOrigin)
-
+        config.setAllowCredentials(true);
+        config.addAllowedOriginPattern("*");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-
         return source;
     }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -47,24 +44,22 @@ public class SecurityConfig {
                         ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/logout", "/auth/mobile/send-verification").authenticated()
                         .requestMatchers(
                                 "/auth/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/error"
                         ).permitAll()
-
                         .requestMatchers("/super-admin/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .requestMatchers("/host/**").hasRole("HOST")
                         .requestMatchers("/driver/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "DRIVER")
                         .requestMatchers("/api/**").authenticated()
-
                         .anyRequest().authenticated()
                 );
 
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
-
 }

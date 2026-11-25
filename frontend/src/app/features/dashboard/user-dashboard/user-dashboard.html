@@ -43,6 +43,9 @@
         📋 <span>My Bookings</span>
         <span class="nav-badge" *ngIf="activeBookingsCount > 0">{{ activeBookingsCount }}</span>
       </button>
+      <button class="ud-nav-item" (click)="goToHostExperience()">
+        🚘 <span>{{ isHost ? 'Switch to Host Portal' : 'Become a Host' }}</span>
+      </button>
     </nav>
 
     <div class="sidebar-footer">

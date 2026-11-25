@@ -1,0 +1,158 @@
+<div style="max-width:1100px; margin:28px auto; padding:0 16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px; background:#0f172a; color:#fff; padding:20px 24px; border-radius:14px;">
+    <div>
+      <h2 style="margin:0;">Host Portal</h2>
+      <p style="margin:4px 0 0; color:#94a3b8; font-size:14px;" *ngIf="dashboard">
+        {{ dashboard.businessName || dashboard.hostName }} • City: {{ dashboard.city }} • Status: {{ dashboard.verificationStatus }}
+      </p>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button type="button" (click)="switchToUserPortal()"
+        style="padding:8px 14px; border:none; border-radius:8px; background:#334155; color:#fff; font-weight:600; cursor:pointer;">
+        Switch to User Portal
+      </button>
+      <a routerLink="/host-onboarding"
+        style="padding:8px 14px; border-radius:8px; background:#1e293b; color:#e2e8f0; text-decoration:none; font-weight:600;">
+        Host Profile
+      </a>
+      <button type="button" (click)="logout()"
+        style="padding:8px 14px; border:none; border-radius:8px; background:#dc2626; color:#fff; font-weight:600; cursor:pointer;">
+        Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+    <button (click)="activeTab='overview'" [style.background]="activeTab==='overview' ? '#2563eb' : '#e2e8f0'" [style.color]="activeTab==='overview' ? '#fff' : '#0f172a'" style="padding:10px 16px; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Overview</button>
+    <button (click)="activeTab='vehicles'" [style.background]="activeTab==='vehicles' ? '#2563eb' : '#e2e8f0'" [style.color]="activeTab==='vehicles' ? '#fff' : '#0f172a'" style="padding:10px 16px; border:none; border-radius:8px; font-weight:600; cursor:pointer;">My Vehicles ({{ vehicles.length }})</button>
+    <button (click)="activeTab='bookings'" [style.background]="activeTab==='bookings' ? '#2563eb' : '#e2e8f0'" [style.color]="activeTab==='bookings' ? '#fff' : '#0f172a'" style="padding:10px 16px; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Bookings ({{ bookings.length }})</button>
+    <button (click)="activeTab='earnings'" [style.background]="activeTab==='earnings' ? '#2563eb' : '#e2e8f0'" [style.color]="activeTab==='earnings' ? '#fff' : '#0f172a'" style="padding:10px 16px; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Earnings</button>
+  </div>
+
+  <p *ngIf="message" style="padding:10px 14px; border-radius:8px; background:#dcfce7; color:#166534;">{{ message }}</p>
+  <p *ngIf="error" style="padding:10px 14px; border-radius:8px; background:#fee2e2; color:#991b1b;">{{ error }}</p>
+
+  <!-- Overview -->
+  <div *ngIf="activeTab==='overview' && dashboard" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:14px;">
+    <div style="background:#fff; padding:18px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+      <div style="color:#64748b; font-size:13px;">Total Listed Vehicles</div>
+      <div style="font-size:28px; font-weight:700; margin-top:4px;">{{ dashboard.totalVehicles }}</div>
+    </div>
+    <div style="background:#fff; padding:18px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+      <div style="color:#64748b; font-size:13px;">Available Vehicles</div>
+      <div style="font-size:28px; font-weight:700; color:#16a34a; margin-top:4px;">{{ dashboard.availableVehicles }}</div>
+    </div>
+    <div style="background:#fff; padding:18px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+      <div style="color:#64748b; font-size:13px;">Pending Approval</div>
+      <div style="font-size:28px; font-weight:700; color:#d97706; margin-top:4px;">{{ dashboard.pendingApprovalVehicles }}</div>
+    </div>
+    <div style="background:#fff; padding:18px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+      <div style="color:#64748b; font-size:13px;">Active Bookings</div>
+      <div style="font-size:28px; font-weight:700; color:#2563eb; margin-top:4px;">{{ dashboard.activeBookings }}</div>
+    </div>
+    <div style="background:#fff; padding:18px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+      <div style="color:#64748b; font-size:13px;">Total Earnings</div>
+      <div style="font-size:28px; font-weight:700; color:#0f172a; margin-top:4px;">₹{{ dashboard.totalEarnings | number:'1.0-0' }}</div>
+    </div>
+  </div>
+
+  <!-- Vehicles -->
+  <div *ngIf="activeTab==='vehicles'" style="background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="margin:0;">My Listed Vehicles</h3>
+      <button type="button" (click)="showAddForm = !showAddForm"
+        style="padding:8px 14px; border:none; border-radius:8px; background:#2563eb; color:#fff; font-weight:600; cursor:pointer;">
+        {{ showAddForm ? 'Cancel' : '+ Add Vehicle' }}
+      </button>
+    </div>
+
+    <div *ngIf="showAddForm" style="padding:16px; background:#f8fafc; border-radius:10px; margin-bottom:18px; border:1px solid #e2e8f0;">
+      <h4 style="margin:0 0 12px;">Submit Vehicle for Marketplace Approval</h4>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
+        <input type="text" [(ngModel)]="newCar.carNumber" placeholder="Reg Number (e.g. MP09AB1234)" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;" />
+        <input type="text" [(ngModel)]="newCar.brand" placeholder="Brand (e.g. Maruti)" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;" />
+        <input type="text" [(ngModel)]="newCar.model" placeholder="Model (e.g. Swift)" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;" />
+        <select [(ngModel)]="newCar.carClass" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+          <option *ngFor="let c of carClasses" [value]="c">{{ c }}</option>
+        </select>
+        <select [(ngModel)]="newCar.fuelType" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+          <option *ngFor="let f of fuelTypes" [value]="f">{{ f }}</option>
+        </select>
+        <select [(ngModel)]="newCar.transmission" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+          <option *ngFor="let t of transmissions" [value]="t">{{ t }}</option>
+        </select>
+        <input type="number" [(ngModel)]="newCar.pricePerDay" placeholder="Daily Price (₹)" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;" />
+        <input type="text" [(ngModel)]="newCar.city" placeholder="City" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;" />
+        <input type="text" [(ngModel)]="newCar.currentLocation" placeholder="Pickup Location" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px;" />
+      </div>
+      <button type="button" (click)="createVehicle()" [disabled]="submittingCar"
+        style="margin-top:12px; padding:10px 18px; border:none; border-radius:8px; background:#16a34a; color:#fff; font-weight:600; cursor:pointer;">
+        {{ submittingCar ? 'Submitting...' : 'Submit Vehicle' }}
+      </button>
+    </div>
+
+    <div *ngIf="vehicles.length === 0" style="color:#64748b;">No vehicles listed yet.</div>
+    <table *ngIf="vehicles.length > 0" style="width:100%; border-collapse:collapse; font-size:14px;">
+      <thead>
+        <tr style="text-align:left; border-bottom:1px solid #e2e8f0; color:#64748b;">
+          <th style="padding:10px;">Car</th>
+          <th style="padding:10px;">Class</th>
+          <th style="padding:10px;">Price/Day</th>
+          <th style="padding:10px;">Approval</th>
+          <th style="padding:10px;">Status</th>
+          <th style="padding:10px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let car of vehicles" style="border-bottom:1px solid #f1f5f9;">
+          <td style="padding:10px;"><strong>{{ car.brand }} {{ car.model }}</strong><br /><small>{{ car.carNumber }}</small></td>
+          <td style="padding:10px;">{{ car.carClass }}</td>
+          <td style="padding:10px;">₹{{ car.pricePerDay }}</td>
+          <td style="padding:10px;">{{ car.approvalStatus }}</td>
+          <td style="padding:10px;">{{ car.status }}</td>
+          <td style="padding:10px;">
+            <button *ngIf="car.approvalStatus === 'APPROVED'" type="button" (click)="toggleAvailability(car)"
+              style="padding:6px 10px; border:none; border-radius:6px; background:#0f172a; color:#fff; cursor:pointer; font-size:12px;">
+              {{ car.active ? 'Disable' : 'Enable' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bookings -->
+  <div *ngIf="activeTab==='bookings'" style="background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+    <h3 style="margin:0 0 14px;">Bookings for My Vehicles</h3>
+    <div *ngIf="bookings.length === 0" style="color:#64748b;">No bookings yet.</div>
+    <table *ngIf="bookings.length > 0" style="width:100%; border-collapse:collapse; font-size:14px;">
+      <thead>
+        <tr style="text-align:left; border-bottom:1px solid #e2e8f0; color:#64748b;">
+          <th style="padding:10px;">Vehicle</th>
+          <th style="padding:10px;">Customer</th>
+          <th style="padding:10px;">Dates</th>
+          <th style="padding:10px;">Status</th>
+          <th style="padding:10px;">Your Earnings</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let b of bookings" style="border-bottom:1px solid #f1f5f9;">
+          <td style="padding:10px;">{{ b.carTitle }} ({{ b.carNumber }})</td>
+          <td style="padding:10px;">{{ b.customerName }}</td>
+          <td style="padding:10px;">{{ b.startDate }} → {{ b.endDate }}</td>
+          <td style="padding:10px;">{{ b.status }}</td>
+          <td style="padding:10px;">₹{{ b.hostEarningsAmount }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Earnings -->
+  <div *ngIf="activeTab==='earnings'" style="background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+    <h3 style="margin:0 0 10px;">Earnings Summary</h3>
+    <p *ngIf="earnings" style="font-size:18px; font-weight:700;">
+      Total Earned: ₹{{ earnings.totalEarnings | number:'1.0-0' }} ({{ earnings.bookingsCount }} bookings)
+    </p>
+  </div>
+</div>

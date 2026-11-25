@@ -36,13 +36,53 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     boolean existsOverlappingBooking(@Param("carId") Long carId,
                                      @Param("startDate") LocalDate startDate,
                                      @Param("endDate") LocalDate endDate);
-//
-//    @Query("""
-//
-//SELECT COALESCE(SUM(b.totalAmount), 0)
-//
-//FROM Booking b
-//
-//""")
-//    double getTotalRevenue();
+
+    @Query("""
+        SELECT COALESCE(SUM(COALESCE(b.grossAmount, CAST(b.finalPrice AS BigDecimal))), 0)
+        FROM Booking b
+        WHERE b.status IN ('PAYMENT_SUCCESS','VERIFICATION_PENDING','DRIVER_ASSIGNMENT_PENDING','CONFIRMED','IN_PROGRESS','INSPECTION_PENDING','COMPLETED')
+    """)
+    java.math.BigDecimal getTotalRevenue();
+
+    @Query("""
+        SELECT COALESCE(SUM(COALESCE(b.platformCommissionAmount, 0) + COALESCE(b.platformFeeAmount, 0)), 0)
+        FROM Booking b
+        WHERE b.status IN ('PAYMENT_SUCCESS','VERIFICATION_PENDING','DRIVER_ASSIGNMENT_PENDING','CONFIRMED','IN_PROGRESS','INSPECTION_PENDING','COMPLETED')
+    """)
+    java.math.BigDecimal getTotalPlatformEarnings();
+
+    @Query("""
+        SELECT COUNT(b)
+        FROM Booking b
+        WHERE b.status IN ('PAYMENT_SUCCESS','VERIFICATION_PENDING','DRIVER_ASSIGNMENT_PENDING','CONFIRMED','IN_PROGRESS','INSPECTION_PENDING')
+    """)
+    long countActiveBookings();
+
+    @Query("""
+        SELECT COUNT(b)
+        FROM Booking b
+        WHERE UPPER(b.pickupCity) = UPPER(:city)
+          AND b.status IN ('PAYMENT_SUCCESS','VERIFICATION_PENDING','DRIVER_ASSIGNMENT_PENDING','CONFIRMED','IN_PROGRESS','INSPECTION_PENDING')
+    """)
+    long countActiveBookingsByCity(@Param("city") String city);
+
+    long countByPickupCityIgnoreCaseOrDropCityIgnoreCase(String pickupCity, String dropCity);
+
+    List<Booking> findByCar_Host_IdOrderByCreatedAtDesc(Long hostId);
+
+    @Query("""
+        SELECT COALESCE(SUM(COALESCE(b.hostEarningsAmount, 0)), 0)
+        FROM Booking b
+        WHERE b.car.host.id = :hostId
+          AND b.status IN ('PAYMENT_SUCCESS','VERIFICATION_PENDING','DRIVER_ASSIGNMENT_PENDING','CONFIRMED','IN_PROGRESS','INSPECTION_PENDING','COMPLETED')
+    """)
+    java.math.BigDecimal getTotalHostEarnings(@Param("hostId") Long hostId);
+
+    @Query("SELECT b FROM Booking b JOIN FETCH b.user JOIN FETCH b.car c LEFT JOIN FETCH c.host h LEFT JOIN FETCH h.user WHERE b.bookingType = 'SELF_DRIVE' AND UPPER(b.pickupCity) IN :cities ORDER BY b.createdAt DESC")
+    List<Booking> findSelfDriveBookingsByCities(@Param("cities") List<String> upperCities);
+
+    @Query("SELECT b FROM Booking b JOIN FETCH b.user JOIN FETCH b.car c LEFT JOIN FETCH c.host h LEFT JOIN FETCH h.user WHERE b.bookingType = 'SELF_DRIVE' ORDER BY b.createdAt DESC")
+    List<Booking> findAllSelfDriveBookings();
+
+    List<Booking> findByCar_IdOrderByCreatedAtDesc(Long carId);
 }

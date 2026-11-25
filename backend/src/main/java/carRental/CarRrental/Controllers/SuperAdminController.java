@@ -1,13 +1,13 @@
 package carRental.CarRrental.Controllers;
 
-import carRental.CarRrental.Dtos.CarPricingRequest;
-import carRental.CarRrental.Dtos.CreateAdminRequest;
-import carRental.CarRrental.Dtos.DashboardStatsResponse;
-import carRental.CarRrental.Dtos.ServiceCityRequest;
+import carRental.CarRrental.Dtos.*;
 import carRental.CarRrental.Models.*;
+import carRental.CarRrental.Services.SuperAdminMarketplaceService;
 import carRental.CarRrental.Services.SuperAdminService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +22,7 @@ import java.util.Map;
 public class SuperAdminController {
 
     private final SuperAdminService superAdminService;
+    private final SuperAdminMarketplaceService marketplaceService;
 
     // ================= ADMINS =================
 
@@ -51,10 +52,9 @@ public class SuperAdminController {
     }
 
     @GetMapping("/admins")
-    public ResponseEntity<List<AppUser>> getAllAdmins() {
-
+    public ResponseEntity<List<AdminSummaryDto>> getAllAdmins() {
         return ResponseEntity.ok(
-                superAdminService.getAllAdmins()
+                superAdminService.getAllAdminSummaries()
         );
     }
 
@@ -106,11 +106,29 @@ public class SuperAdminController {
     // ================= USERS =================
 
     @GetMapping("/users")
-    public ResponseEntity<List<AppUser>> getAllUsers() {
-
+    public ResponseEntity<List<UserSummaryDto>> getAllUsers() {
         return ResponseEntity.ok(
-                superAdminService.getAllUsers()
+                marketplaceService.getAllUserSummaries()
         );
+    }
+
+    @GetMapping("/users/{id}/details")
+    public ResponseEntity<UserDetailDto> getUserDetails(@PathVariable Long id) {
+        return ResponseEntity.ok(marketplaceService.getUserDetails(id));
+    }
+
+    @PatchMapping("/users/{id}/suspend")
+    public ResponseEntity<Map<String, String>> suspendUser(
+            @PathVariable Long id,
+            @RequestBody(required = false) SuspendAccountRequest req) {
+        marketplaceService.suspendUser(id, req != null ? req.getReason() : null);
+        return ResponseEntity.ok(Map.of("message", "User suspended successfully"));
+    }
+
+    @PatchMapping("/users/{id}/unsuspend")
+    public ResponseEntity<Map<String, String>> unsuspendUser(@PathVariable Long id) {
+        marketplaceService.unsuspendUser(id);
+        return ResponseEntity.ok(Map.of("message", "User unsuspended successfully"));
     }
 
     @PatchMapping("/users/{id}/deactivate")
@@ -245,11 +263,23 @@ public class SuperAdminController {
     }
 
     @GetMapping("/cities")
-    public ResponseEntity<List<ServiceCity>> getAllCities() {
-
+    public ResponseEntity<List<ServiceCityResponseDto>> getAllCities() {
         return ResponseEntity.ok(
-                superAdminService.getAllCities()
+                marketplaceService.getAllCitiesWithMetrics()
         );
+    }
+
+    @PutMapping("/cities/{id}")
+    public ResponseEntity<ServiceCity> updateCity(
+            @PathVariable Long id,
+            @Valid @RequestBody ServiceCityRequest req) {
+        return ResponseEntity.ok(marketplaceService.updateCity(id, req));
+    }
+
+    @DeleteMapping("/cities/{id}")
+    public ResponseEntity<Map<String, String>> deleteCity(@PathVariable Long id) {
+        marketplaceService.deleteCity(id);
+        return ResponseEntity.ok(Map.of("message", "City deleted successfully"));
     }
 
     @GetMapping("/cities/active")
@@ -365,6 +395,16 @@ public class SuperAdminController {
         );
     }
 
+    @PatchMapping("/pricing/{id}/deactivate")
+    public ResponseEntity<CarPricing> deactivatePricing(@PathVariable Long id) {
+        return ResponseEntity.ok(superAdminService.setPricingActiveStatus(id, false));
+    }
+
+    @PatchMapping("/pricing/{id}/reactivate")
+    public ResponseEntity<CarPricing> reactivatePricing(@PathVariable Long id) {
+        return ResponseEntity.ok(superAdminService.setPricingActiveStatus(id, true));
+    }
+
     @DeleteMapping("/pricing/{id}")
     public ResponseEntity<Map<String, String>> deletePricing(
             @PathVariable Long id
@@ -438,11 +478,138 @@ public class SuperAdminController {
         );
     }
     @GetMapping("/dashboard/stats")
-    public ResponseEntity<DashboardStatsResponse>
-    getDashboardStats() {
+    public ResponseEntity<DashboardStatsResponse> getDashboardStats() {
+        return ResponseEntity.ok(superAdminService.getDashboardStats());
+    }
 
-        return ResponseEntity.ok(
-                superAdminService.getDashboardStats()
-        );
+    // ================= HOSTS (REPLACES DRIVERS) =================
+
+    @GetMapping("/hosts")
+    public ResponseEntity<List<HostSummaryDto>> getAllHosts(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) HostVerificationStatus verificationStatus,
+            @RequestParam(required = false) Boolean active) {
+        return ResponseEntity.ok(marketplaceService.getAllHosts(search, verificationStatus, active));
+    }
+
+    @GetMapping("/hosts/{id}")
+    public ResponseEntity<HostDetailDto> getHostDetails(@PathVariable Long id) {
+        return ResponseEntity.ok(marketplaceService.getHostDetails(id));
+    }
+
+    @PatchMapping("/hosts/{id}/verify")
+    public ResponseEntity<HostSummaryDto> verifyHost(
+            @PathVariable Long id,
+            @Valid @RequestBody HostVerificationRequest req) {
+        return ResponseEntity.ok(marketplaceService.verifyHost(id, req));
+    }
+
+    @PatchMapping("/hosts/{id}/deactivate")
+    public ResponseEntity<Map<String, String>> deactivateHost(@PathVariable Long id) {
+        marketplaceService.setHostActiveStatus(id, false);
+        return ResponseEntity.ok(Map.of("message", "Host deactivated successfully"));
+    }
+
+    @PatchMapping("/hosts/{id}/reactivate")
+    public ResponseEntity<Map<String, String>> reactivateHost(@PathVariable Long id) {
+        marketplaceService.setHostActiveStatus(id, true);
+        return ResponseEntity.ok(Map.of("message", "Host reactivated successfully"));
+    }
+
+    @PatchMapping("/hosts/{id}/suspend")
+    public ResponseEntity<Map<String, String>> suspendHost(
+            @PathVariable Long id,
+            @RequestBody(required = false) SuspendAccountRequest req) {
+        marketplaceService.suspendHost(id, req != null ? req.getReason() : null);
+        return ResponseEntity.ok(Map.of("message", "Host suspended successfully"));
+    }
+
+    @PatchMapping("/hosts/{id}/unsuspend")
+    public ResponseEntity<Map<String, String>> unsuspendHost(@PathVariable Long id) {
+        marketplaceService.unsuspendHost(id);
+        return ResponseEntity.ok(Map.of("message", "Host unsuspended successfully"));
+    }
+
+    // ================= FLEET MANAGERS =================
+
+    @GetMapping("/fleet-managers")
+    public ResponseEntity<List<StaffSummaryDto>> getFleetManagers() {
+        return ResponseEntity.ok(marketplaceService.getStaffByRole(UserRole.FLEET_MANAGER));
+    }
+
+    @PostMapping("/fleet-managers")
+    public ResponseEntity<StaffSummaryDto> createFleetManager(@Valid @RequestBody StaffAccountRequest req) {
+        return ResponseEntity.status(201).body(marketplaceService.createStaffAccount(req, UserRole.FLEET_MANAGER));
+    }
+
+    @PatchMapping("/fleet-managers/{id}/assign-scope")
+    public ResponseEntity<StaffSummaryDto> assignFleetManagerScope(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(marketplaceService.assignStaffScope(
+                id, UserRole.FLEET_MANAGER, body.get("city"), body.get("operationalScope")));
+    }
+
+    @PatchMapping("/fleet-managers/{id}/deactivate")
+    public ResponseEntity<Map<String, String>> deactivateFleetManager(@PathVariable Long id) {
+        marketplaceService.setStaffActiveStatus(id, UserRole.FLEET_MANAGER, false);
+        return ResponseEntity.ok(Map.of("message", "Fleet Manager deactivated successfully"));
+    }
+
+    @PatchMapping("/fleet-managers/{id}/reactivate")
+    public ResponseEntity<Map<String, String>> reactivateFleetManager(@PathVariable Long id) {
+        marketplaceService.setStaffActiveStatus(id, UserRole.FLEET_MANAGER, true);
+        return ResponseEntity.ok(Map.of("message", "Fleet Manager reactivated successfully"));
+    }
+
+    // ================= SUPPORT AGENTS =================
+
+    @GetMapping("/support-agents")
+    public ResponseEntity<List<StaffSummaryDto>> getSupportAgents() {
+        return ResponseEntity.ok(marketplaceService.getStaffByRole(UserRole.SUPPORT_AGENT));
+    }
+
+    @PostMapping("/support-agents")
+    public ResponseEntity<StaffSummaryDto> createSupportAgent(@Valid @RequestBody StaffAccountRequest req) {
+        return ResponseEntity.status(201).body(marketplaceService.createStaffAccount(req, UserRole.SUPPORT_AGENT));
+    }
+
+    @PatchMapping("/support-agents/{id}/assign-scope")
+    public ResponseEntity<StaffSummaryDto> assignSupportAgentScope(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(marketplaceService.assignStaffScope(
+                id, UserRole.SUPPORT_AGENT, body.get("city"), body.get("operationalScope")));
+    }
+
+    @PatchMapping("/support-agents/{id}/deactivate")
+    public ResponseEntity<Map<String, String>> deactivateSupportAgent(@PathVariable Long id) {
+        marketplaceService.setStaffActiveStatus(id, UserRole.SUPPORT_AGENT, false);
+        return ResponseEntity.ok(Map.of("message", "Support Agent deactivated successfully"));
+    }
+
+    @PatchMapping("/support-agents/{id}/reactivate")
+    public ResponseEntity<Map<String, String>> reactivateSupportAgent(@PathVariable Long id) {
+        marketplaceService.setStaffActiveStatus(id, UserRole.SUPPORT_AGENT, true);
+        return ResponseEntity.ok(Map.of("message", "Support Agent reactivated successfully"));
+    }
+
+    // ================= PLATFORM SETTINGS & AUDIT LOGS =================
+
+    @GetMapping("/settings")
+    public ResponseEntity<PlatformSettingsDto> getPlatformSettings() {
+        return ResponseEntity.ok(marketplaceService.getPlatformSettings());
+    }
+
+    @PutMapping("/settings")
+    public ResponseEntity<PlatformSettingsDto> updatePlatformSettings(@Valid @RequestBody PlatformSettingsDto dto) {
+        return ResponseEntity.ok(marketplaceService.updatePlatformSettings(dto));
+    }
+
+    @GetMapping("/audit-logs")
+    public ResponseEntity<Page<AuditLog>> getAuditLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(marketplaceService.getAuditLogs(PageRequest.of(page, size)));
     }
 }

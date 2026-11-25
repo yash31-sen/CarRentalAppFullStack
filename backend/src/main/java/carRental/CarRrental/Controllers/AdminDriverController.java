@@ -1,49 +1,20 @@
 package carRental.CarRrental.Controllers;
 
-import carRental.CarRrental.Dtos.DriverCreateRequest;
-import carRental.CarRrental.Dtos.DriverUpdateRequest;
-import carRental.CarRrental.Models.DriverProfile;        // 👈 FIXED
-import carRental.CarRrental.Services.AdminDriverService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/admin/drivers")
-@RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 public class AdminDriverController {
 
-    private final AdminDriverService adminDriverService;
-
-    @PostMapping
-    public ResponseEntity<DriverProfile> add(
-            @jakarta.validation.Valid @RequestBody DriverCreateRequest req) {
-        return ResponseEntity.status(201)
-                .body(adminDriverService.addDriver(req));
-    }
-
-    @GetMapping
-    public ResponseEntity<List<DriverProfile>> all() {
-        return ResponseEntity.ok(
-                adminDriverService.getAllDrivers());
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<DriverProfile> update(
-            @PathVariable Long id,
-            @jakarta.validation.Valid @RequestBody DriverUpdateRequest req) {
-        return ResponseEntity.ok(
-                adminDriverService.updateDriver(id, req));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> disable(
-            @PathVariable Long id) {
-        adminDriverService.disableDriver(id);
-        return ResponseEntity.ok("Driver disabled");
+    @RequestMapping(method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
+    public void driverManagementRemoved() {
+        throw new ResponseStatusException(
+                HttpStatus.GONE,
+                "Driver management has been removed from the Admin Portal. Use Host Management instead."
+        );
     }
 }

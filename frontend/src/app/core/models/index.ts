@@ -2,10 +2,83 @@ export interface AppUser {
   id: number;
   name: string;
   email: string;
-  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN' | 'DRIVER';
+  role: 'USER' | 'HOST' | 'ADMIN' | 'SUPER_ADMIN' | 'DRIVER' | 'GUEST' | 'FLEET_MANAGER' | 'SUPPORT_AGENT';
   active: boolean;
+  suspended?: boolean;
+  suspensionReason?: string;
   emailVerified: boolean;
   city?: string;
+  assignedCities?: string[];
+  operationalScope?: string;
+  createdAt?: string;
+}
+
+export interface DashboardStats {
+  totalAdmins: number;
+  totalUsers: number;
+  totalHosts: number;
+  totalCities: number;
+  totalListedCars: number;
+  totalBookings: number;
+  totalRevenue: number;
+  platformEarnings: number;
+  pendingHostVerifications: number;
+  pendingVehicleApprovals: number;
+  activeBookings: number;
+  availableCars: number;
+  unavailableCars: number;
+  pendingHostPayouts: number;
+  pendingHostPayoutAmount: number;
+}
+
+export interface HostSummary {
+  id: number;
+  userId: number;
+  name: string;
+  email: string;
+  phone?: string;
+  city?: string;
+  businessName?: string;
+  verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'RESUBMISSION_REQUIRED';
+  rejectionReason?: string;
+  active: boolean;
+  suspended: boolean;
+  emailVerified: boolean;
+  vehicleCount: number;
+  createdAt?: string;
+}
+
+export interface HostDetail extends HostSummary {
+  address?: string;
+  governmentIdNumber?: string;
+  documentType?: string;
+  documentUrl?: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  suspensionReason?: string;
+  totalBookings: number;
+  completedBookings: number;
+  totalEarnings: number;
+  vehicles: any[];
+  bookingHistory: any[];
+  payoutHistory: any[];
+  reviews: any[];
+  reportedIncidents: any[];
+}
+
+export interface UserDetail {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+  suspended: boolean;
+  suspensionReason?: string;
+  emailVerified: boolean;
+  createdAt?: string;
+  bookingHistory: any[];
+  paymentHistory: any[];
+  reviews: any[];
+  reportedIncidents: any[];
 }
 
 export interface DriverProfile {
@@ -24,8 +97,13 @@ export interface ServiceCity {
   parkingAddress: string;
   parkingContact: string;
   oneWayFee: number;
+  localServiceCharge?: number;
   admin: AppUser | null;
   active: boolean;
+  bookingAvailable?: boolean;
+  hostCount?: number;
+  vehicleCount?: number;
+  activeBookingCount?: number;
 }
 
 export interface CarPricing {
@@ -37,6 +115,40 @@ export interface CarPricing {
   maxPerDayRate: number;
   freeKmPerDay: number;
   extraKmRate: number;
+  platformCommissionPercent?: number;
+  minPlatformFee?: number;
+  maxPlatformFee?: number;
+  minBookingDurationDays?: number;
+  maxBookingDurationDays?: number;
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PlatformSettings {
+  defaultPlatformCommissionPercent: number;
+  defaultPlatformServiceFee: number;
+  minBookingDurationDays: number;
+  maxBookingDurationDays: number;
+  cancellationPolicy: string;
+  refundPolicy: string;
+  hostVerificationRequired: boolean;
+  guestVerificationRequired: boolean;
+  vehicleListingApprovalRequired: boolean;
+  oneWayBookingEnabled: boolean;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export interface AuditLog {
+  id: number;
+  actorEmail: string;
+  actorRole: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  details?: string;
+  createdAt: string;
 }
 
 export interface Car {
@@ -99,4 +211,3 @@ export interface Booking {
   createdAt: string;
   updatedAt: string;
 }
-

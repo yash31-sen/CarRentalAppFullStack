@@ -1,0 +1,7 @@
+.manage-staff { padding: 10px; }
+.top-bar { margin-bottom: 20px; }
+.subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 18px; }
+.actions { display: flex; gap: 8px; }
+.actions button { padding: 6px 12px; font-size: 12px; }
+.empty-state { color: var(--text-muted); padding: 20px 0; text-align: center; }

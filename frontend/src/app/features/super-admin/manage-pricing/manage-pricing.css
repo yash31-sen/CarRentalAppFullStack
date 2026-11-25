@@ -22,3 +22,12 @@
   display: flex;
   gap: 10px;
 }
+
+.field-lbl {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

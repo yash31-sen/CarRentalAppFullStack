@@ -79,8 +79,8 @@ public class AdminDriverService {
         DriverProfile savedProfile = driverProfileRepository.save(profile);
 
         // Create setup token and send email invite
-        UserToken setupToken = tokenService.createAccountSetupToken(savedUser);
-        String link = frontendUrl + "/setup-account?token=" + setupToken.getToken();
+        TokenService.GeneratedToken setupToken = tokenService.createAccountSetupToken(savedUser);
+        String link = frontendUrl + "/setup-account?token=" + setupToken.rawToken();
 
         emailService.sendEmail(
                 savedUser.getEmail(),

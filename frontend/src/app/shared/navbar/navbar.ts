@@ -1,55 +1,41 @@
-import { Component, inject } from '@angular/core';
-import { Router, NavigationEnd } from '@angular/router';
+import { Component } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-
-import { filter } from 'rxjs';
 import { AuthService } from '../../core/services/auth';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css'
 })
 export class Navbar {
+  constructor(
+    public authService: AuthService,
+    private router: Router
+  ) {}
 
-  private authService = inject(AuthService);
-  private router = inject(Router);
+  get isLoggedIn(): boolean {
+    return !!this.authService.getToken();
+  }
 
-  role = this.authService.role;
-  currentRoute: string = '';
+  get role(): string | null {
+    return this.authService.getRole();
+  }
 
-  constructor() {
-    // 🔥 route tracking
-    this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: any) => {
-        this.currentRoute = event.url;
-      });
+  get roles(): string[] {
+    return this.authService.getRoles();
+  }
+
+  hasRole(role: string): boolean {
+    return this.authService.hasRole(role);
   }
 
   logout() {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
-
-  goLogin() {
-    this.router.navigate(['/login']);
-  }
-
-  goRegister() {
-    this.router.navigate(['/register']);
-  }
-
-  getShortRole(role: string | null): string {
-    if (!role) return '';
-    switch (role) {
-      case 'SUPER_ADMIN': return 'SUPER';
-      case 'ADMIN': return 'ADMIN';
-      case 'USER': return 'USER';
-      case 'DRIVER': return 'DRIVER';
-      default: return role;
-    }
+    this.authService.logoutRemote().subscribe({
+      next: () => this.router.navigate(['/login']),
+      error: () => this.router.navigate(['/login']),
+    });
   }
 }

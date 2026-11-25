@@ -26,4 +26,7 @@ public interface ServiceCityRepository
 
     // find city by admin
     Optional<ServiceCity> findByAdmin_Id(Long adminId);
+
+    // find all cities assigned to an admin
+    List<ServiceCity> findAllByAdmin_Id(Long adminId);
 }

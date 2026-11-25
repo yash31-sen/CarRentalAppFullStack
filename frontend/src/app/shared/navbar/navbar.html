@@ -1,35 +1,23 @@
 <nav class="navbar">
-
-  <!-- 🔷 LEFT SECTION -->
-  <div class="left-section">
-
-    <!-- Role Badge -->
-    <div *ngIf="role()" class="role-badge" [ngClass]="role() || ''">
-      {{ getShortRole(role()) }}
-    </div>
-
-    <!-- Logo -->
-    <div class="logo">Car Rental</div>
-
+  <div class="nav-brand">
+    <a routerLink="/" class="brand-link">
+      🚗 <span>CarRental</span>
+    </a>
   </div>
 
-  <!-- 🔷 RIGHT ACTIONS -->
-  <div class="actions">
-
-    <ng-container *ngIf="!role()">
-      <button *ngIf="currentRoute === '/login'" (click)="goRegister()">Register</button>
-      <button *ngIf="currentRoute === '/register'" (click)="goLogin()">Login</button>
-
-      <ng-container *ngIf="currentRoute !== '/login' && currentRoute !== '/register'">
-        <button (click)="goLogin()">Login</button>
-        <button (click)="goRegister()">Register</button>
-      </ng-container>
+  <div class="nav-actions">
+    <ng-container *ngIf="isLoggedIn; else guestLinks">
+      <a *ngIf="hasRole('USER')" routerLink="/user-dashboard" class="nav-btn">User Portal</a>
+      <a *ngIf="hasRole('HOST')" routerLink="/host-dashboard" class="nav-btn">Host Portal</a>
+      <a *ngIf="hasRole('USER') && !hasRole('HOST')" routerLink="/host-onboarding" class="nav-btn nav-btn-primary">Become a Host</a>
+      <span class="role-badge">{{ roles.join(' • ') }}</span>
+      <button class="logout-btn" (click)="logout()">Logout</button>
     </ng-container>
 
-    <ng-container *ngIf="role()">
-      <button (click)="logout()">Logout</button>
-    </ng-container>
-
+    <ng-template #guestLinks>
+      <a routerLink="/login" class="nav-btn">Login</a>
+      <a routerLink="/register" class="nav-btn">Register</a>
+      <a routerLink="/register" [queryParams]="{ mode: 'host' }" class="nav-btn nav-btn-primary">Register as Host</a>
+    </ng-template>
   </div>
-
 </nav>

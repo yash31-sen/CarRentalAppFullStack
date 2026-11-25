@@ -2,7 +2,29 @@
 
   <div class="auth-card">
 
-    <h2>Create Account</h2>
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <button
+        type="button"
+        (click)="setMode('user')"
+        [style.background]="mode === 'user' ? '#2563eb' : '#e2e8f0'"
+        [style.color]="mode === 'user' ? '#ffffff' : '#1e293b'"
+        style="flex:1; padding:10px; border:none; border-radius:8px; font-weight:600; cursor:pointer;">
+        Register as User
+      </button>
+      <button
+        type="button"
+        (click)="setMode('host')"
+        [style.background]="mode === 'host' ? '#2563eb' : '#e2e8f0'"
+        [style.color]="mode === 'host' ? '#ffffff' : '#1e293b'"
+        style="flex:1; padding:10px; border:none; border-radius:8px; font-weight:600; cursor:pointer;">
+        Register as Host
+      </button>
+    </div>
+
+    <h2>{{ mode === 'host' ? 'Become a Car Host' : 'Create Account' }}</h2>
+    <p *ngIf="mode === 'host'" style="font-size:13px; color:#475569; margin-bottom:14px;">
+      List your personal vehicle and earn. You will verify your email first, then submit identity documents for Admin approval.
+    </p>
 
     <form [formGroup]="registerForm" (ngSubmit)="register()">
 
@@ -23,6 +45,17 @@
       </div>
 
       <div class="form-group">
+        <input
+          type="text"
+          formControlName="mobileNumber"
+          [placeholder]="mode === 'host' ? 'Mobile Number (Required for Host)' : 'Mobile Number (Optional)'" />
+        <span class="field-error"
+          *ngIf="registerForm.get('mobileNumber')?.invalid && registerForm.get('mobileNumber')?.touched">
+          Please enter a valid mobile number.
+        </span>
+      </div>
+
+      <div class="form-group">
         <input type="password" formControlName="password" placeholder="Password" />
         <span class="field-hint" *ngIf="!registerForm.get('password')?.touched">
           Must be 8+ chars with uppercase, number &amp; special char (@#$%^&amp;+=!)
@@ -33,8 +66,23 @@
         </span>
       </div>
 
+      <div class="form-group">
+        <input type="password" formControlName="confirmPassword" placeholder="Confirm Password" />
+        <span class="field-error"
+          *ngIf="registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched">
+          Passwords do not match.
+        </span>
+      </div>
+
+      <div class="form-group" *ngIf="mode === 'host'" style="display:flex; align-items:flex-start; gap:8px; text-align:left;">
+        <input type="checkbox" formControlName="termsAccepted" id="termsAccepted" style="width:auto; margin-top:4px;" />
+        <label for="termsAccepted" style="font-size:13px; color:#334155;">
+          I accept the Host Terms &amp; Conditions and agree to provide accurate identity and vehicle documentation.
+        </label>
+      </div>
+
       <button type="submit" [disabled]="registerForm.invalid || loading">
-        {{ loading ? 'Registering...' : 'Create Account' }}
+        {{ loading ? 'Registering...' : (mode === 'host' ? 'Create Account & Start Host Onboarding' : 'Create Account') }}
       </button>
 
     </form>
@@ -45,7 +93,6 @@
       <div id="google-btn"></div>
     </div>
 
-    <!-- Messages -->
     <p class="success" *ngIf="successMessage">{{ successMessage }}</p>
     <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
 

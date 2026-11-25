@@ -1,0 +1,230 @@
+<div class="manage-hosts">
+  <div class="top-bar">
+    <h2>Manage Hosts</h2>
+    <p class="subtitle">Independent vehicle owners listing personal cars on the marketplace</p>
+  </div>
+
+  <!-- CONFIRM MODAL -->
+  <div class="confirm-box" *ngIf="showConfirmModal">
+    <div class="popup">
+      <h3>Confirm Action</h3>
+      <p>
+        Are you sure you want to
+        <b>{{ confirmActionType === 'VERIFIED' ? 'approve verification for' : confirmActionType }}</b>
+        this host?
+      </p>
+      <div class="popup-actions">
+        <button class="cancel" (click)="showConfirmModal = false">Cancel</button>
+        <button class="confirm" (click)="confirmAction()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REASON MODAL -->
+  <div class="confirm-box" *ngIf="showReasonModal">
+    <div class="popup">
+      <h3>
+        {{ reasonAction === 'SUSPEND' ? 'Suspend Host Account' :
+           reasonAction === 'REJECTED' ? 'Reject Host Verification' : 'Request Resubmission' }}
+      </h3>
+      <textarea rows="3" [(ngModel)]="actionReason" placeholder="Enter reason (required)..."></textarea>
+      <div class="popup-actions" style="margin-top: 16px;">
+        <button class="cancel" (click)="showReasonModal = false">Cancel</button>
+        <button class="delete" (click)="submitReasonAction()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL MODAL -->
+  <div class="confirm-box" *ngIf="showDetailModal">
+    <div class="popup detail-modal">
+      <div class="modal-header">
+        <h3>Host Profile & Activity</h3>
+        <button class="cancel" (click)="closeDetails()">Close</button>
+      </div>
+
+      <div *ngIf="detailLoading" class="empty-state">Loading host details...</div>
+
+      <div *ngIf="!detailLoading && selectedHost">
+        <div class="detail-tabs">
+          <button [class.active]="detailTab === 'profile'" (click)="detailTab = 'profile'">Profile & Docs</button>
+          <button [class.active]="detailTab === 'vehicles'" (click)="detailTab = 'vehicles'">Vehicles ({{ selectedHost.vehicles.length }})</button>
+          <button [class.active]="detailTab === 'bookings'" (click)="detailTab = 'bookings'">Bookings ({{ selectedHost.bookingHistory.length }})</button>
+          <button [class.active]="detailTab === 'payouts'" (click)="detailTab = 'payouts'">Payouts ({{ selectedHost.payoutHistory.length }})</button>
+          <button [class.active]="detailTab === 'reviews'" (click)="detailTab = 'reviews'">Reviews ({{ selectedHost.reviews.length }})</button>
+          <button [class.active]="detailTab === 'incidents'" (click)="detailTab = 'incidents'">Incidents ({{ selectedHost.reportedIncidents.length }})</button>
+        </div>
+
+        <div *ngIf="detailTab === 'profile'" class="detail-grid">
+          <p><strong>Name:</strong> {{ selectedHost.name }}</p>
+          <p><strong>Email:</strong> {{ selectedHost.email }}</p>
+          <p><strong>Phone:</strong> {{ selectedHost.phone || 'N/A' }}</p>
+          <p><strong>City:</strong> {{ selectedHost.city || 'N/A' }}</p>
+          <p><strong>Address:</strong> {{ selectedHost.address || 'N/A' }}</p>
+          <p><strong>Business Name:</strong> {{ selectedHost.businessName || 'Individual Owner' }}</p>
+          <p><strong>Verification:</strong> {{ selectedHost.verificationStatus }}</p>
+          <p><strong>Document Type:</strong> {{ selectedHost.documentType || 'N/A' }}</p>
+          <p><strong>Gov ID:</strong> {{ selectedHost.governmentIdNumber || 'N/A' }}</p>
+          <p><strong>Document Ref:</strong> {{ selectedHost.documentUrl || 'Not Uploaded' }}</p>
+          <p><strong>Total Earnings:</strong> ₹ {{ selectedHost.totalEarnings }}</p>
+          <p><strong>Completed Bookings:</strong> {{ selectedHost.completedBookings }} / {{ selectedHost.totalBookings }}</p>
+          <p *ngIf="selectedHost.rejectionReason"><strong>Rejection Reason:</strong> {{ selectedHost.rejectionReason }}</p>
+          <p *ngIf="selectedHost.suspensionReason"><strong>Suspension Reason:</strong> {{ selectedHost.suspensionReason }}</p>
+        </div>
+
+        <div *ngIf="detailTab === 'vehicles'">
+          <p *ngIf="selectedHost.vehicles.length === 0" class="empty-state">No vehicles listed by this host.</p>
+          <table *ngIf="selectedHost.vehicles.length > 0">
+            <thead>
+              <tr><th>Plate</th><th>Vehicle</th><th>Category</th><th>Daily Price</th><th>Approval</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of selectedHost.vehicles">
+                <td>{{ v.carNumber }}</td>
+                <td>{{ v.brand }} {{ v.model }}</td>
+                <td>{{ v.carClass }}</td>
+                <td>₹ {{ v.pricePerDay }} <span *ngIf="v.pricingOutOfRange" class="status inactive">OUT OF RANGE</span></td>
+                <td>{{ v.approvalStatus }}</td>
+                <td>{{ v.status }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="detailTab === 'bookings'">
+          <p *ngIf="selectedHost.bookingHistory.length === 0" class="empty-state">No bookings found for this host.</p>
+          <table *ngIf="selectedHost.bookingHistory.length > 0">
+            <thead>
+              <tr><th>ID</th><th>Vehicle</th><th>Dates</th><th>Route</th><th>Host Share</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let b of selectedHost.bookingHistory">
+                <td>#{{ b.id }}</td>
+                <td>{{ b.carName }} ({{ b.carNumber }})</td>
+                <td>{{ b.startDate }} → {{ b.endDate }}</td>
+                <td>{{ b.pickupCity }} → {{ b.dropCity }}</td>
+                <td>₹ {{ b.amount }}</td>
+                <td>{{ b.status }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="detailTab === 'payouts'">
+          <p *ngIf="selectedHost.payoutHistory.length === 0" class="empty-state">No payout records yet.</p>
+          <table *ngIf="selectedHost.payoutHistory.length > 0">
+            <thead>
+              <tr><th>ID</th><th>Booking</th><th>Amount</th><th>Status</th><th>Ref</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of selectedHost.payoutHistory">
+                <td>#{{ p.id }}</td>
+                <td>{{ p.bookingId ? '#' + p.bookingId : 'N/A' }}</td>
+                <td>₹ {{ p.amount }}</td>
+                <td>{{ p.status }}</td>
+                <td>{{ p.payoutRef || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="detailTab === 'reviews'">
+          <p *ngIf="selectedHost.reviews.length === 0" class="empty-state">No ratings or reviews yet.</p>
+          <div *ngFor="let r of selectedHost.reviews" class="list-item">
+            <strong>{{ r.reviewerName }}</strong> — ⭐ {{ r.rating }}/5
+            <p>{{ r.comment }}</p>
+          </div>
+        </div>
+
+        <div *ngIf="detailTab === 'incidents'">
+          <p *ngIf="selectedHost.reportedIncidents.length === 0" class="empty-state">No reported incidents.</p>
+          <div *ngFor="let i of selectedHost.reportedIncidents" class="list-item">
+            <strong>{{ i.title }}</strong> ({{ i.status }}) — by {{ i.reportedByName }}
+            <p>{{ i.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOSTS TABLE -->
+  <div class="card">
+    <h3>All Marketplace Hosts</h3>
+
+    <div class="filters-grid">
+      <input type="text" [(ngModel)]="searchQuery" (keyup.enter)="loadHosts()" placeholder="Search Name, Email, City..." />
+      <select [(ngModel)]="verificationFilter" (ngModelChange)="loadHosts()">
+        <option value="">All Verification Statuses</option>
+        <option value="PENDING">Pending</option>
+        <option value="VERIFIED">Verified</option>
+        <option value="REJECTED">Rejected</option>
+        <option value="RESUBMISSION_REQUIRED">Resubmission Required</option>
+      </select>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="loadHosts()">
+        <option value="">All Account Statuses</option>
+        <option value="true">Active Only</option>
+        <option value="false">Inactive Only</option>
+      </select>
+      <button class="primary" (click)="loadHosts()">Search</button>
+    </div>
+
+    <p *ngIf="loading" class="empty-state">Loading hosts...</p>
+    <p *ngIf="!loading && hosts.length === 0" class="empty-state">No host accounts found.</p>
+
+    <table *ngIf="!loading && hosts.length > 0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Host</th>
+          <th>City</th>
+          <th>Vehicles</th>
+          <th>Verification</th>
+          <th>Account Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let h of pagedHosts">
+          <td>{{ h.id }}</td>
+          <td>
+            <div><strong>{{ h.name }}</strong></div>
+            <small>{{ h.email }}</small>
+          </td>
+          <td>{{ h.city || '-' }}</td>
+          <td>{{ h.vehicleCount }}</td>
+          <td>
+            <span class="status"
+              [ngClass]="h.verificationStatus === 'VERIFIED' ? 'active' : h.verificationStatus === 'REJECTED' ? 'inactive' : 'pending'">
+              {{ h.verificationStatus }}
+            </span>
+          </td>
+          <td>
+            <span class="status" [ngClass]="h.suspended ? 'inactive' : h.active ? 'active' : 'inactive'">
+              {{ h.suspended ? 'SUSPENDED' : h.active ? 'ACTIVE' : 'INACTIVE' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="secondary" (click)="openDetails(h.id)">Details</button>
+            <button *ngIf="h.verificationStatus !== 'VERIFIED'" class="reactivate" (click)="openConfirm(h.id, 'VERIFIED')">Approve</button>
+            <button *ngIf="h.verificationStatus !== 'REJECTED'" class="delete" (click)="openReasonModal(h.id, 'REJECTED')">Reject</button>
+            <button *ngIf="h.active" class="deactivate" (click)="openConfirm(h.id, 'deactivate')">Deactivate</button>
+            <button *ngIf="!h.active && !h.suspended" class="reactivate" (click)="openConfirm(h.id, 'reactivate')">Reactivate</button>
+            <button *ngIf="!h.suspended" class="delete" (click)="openReasonModal(h.id, 'SUSPEND')">Suspend</button>
+            <button *ngIf="h.suspended" class="reactivate" (click)="openConfirm(h.id, 'unsuspend')">Unsuspend</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="pagination-bar" *ngIf="hosts.length > 0">
+      <div class="pagination-info">
+        Showing <strong>{{ currentPage * pageSize + 1 }}&ndash;{{ (currentPage + 1) * pageSize < hosts.length ? (currentPage + 1) * pageSize : hosts.length }}</strong> of <strong>{{ hosts.length }}</strong> hosts
+      </div>
+      <div class="pagination-controls">
+        <button class="page-btn" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 0">‹</button>
+        <button class="page-btn" *ngFor="let p of getPages(totalPages)" [class.active]="p === currentPage" (click)="currentPage = p">{{ p + 1 }}</button>
+        <button class="page-btn" (click)="currentPage = currentPage + 1" [disabled]="currentPage >= totalPages - 1">›</button>
+      </div>
+    </div>
+  </div>
+</div>

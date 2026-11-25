@@ -1,0 +1,14 @@
+.manage-hosts { padding: 10px; }
+.top-bar { margin-bottom: 20px; }
+.subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.actions button { padding: 6px 10px; font-size: 12px; }
+.detail-modal { width: 820px; max-width: 95vw; max-height: 85vh; overflow-y: auto; text-align: left; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.detail-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.detail-tabs button { padding: 8px 12px; background: rgba(255,255,255,0.06); color: var(--text-muted); font-size: 13px; }
+.detail-tabs button.active { background: var(--primary); color: #fff; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.detail-grid p { margin: 0; color: var(--text-main); }
+.empty-state { color: var(--text-muted); padding: 20px 0; text-align: center; }
+.list-item { padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; }
